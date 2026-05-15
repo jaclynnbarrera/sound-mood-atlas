@@ -1,7 +1,29 @@
+# Dependencies
 node_modules/
+
+# Environment variables
 .env
 .env.local
-backend/data/
+.env.production
+.env.*
+
+# Sensitive data
+#backend/data/
+
+# Build output
 frontend/.next/
+frontend/dist/
+frontend/build/
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# IDE
 .idea/
+
+# AI - machine specific / credentials
+.ai/mcp/
+.junie/mcp/
+.junie/memory/
+.junie/plans/

@@ -32,6 +32,7 @@ p {
 h1 {
   margin-bottom: 12px;
   font-size: clamp(3rem, 8vw, 6.5rem);
+  font-weight: 500;
   line-height: 0.92;
   letter-spacing: -0.08em;
 }
@@ -61,6 +62,45 @@ h1 {
 
 .panel {
   padding: 24px;
+}
+
+.filter-panel {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.genre-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  font-family: inherit;
+  font-size: 0.95rem;
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 160ms ease;
+}
+
+.genre-select:focus {
+  border-color: #67e8f9;
+}
+
+.genre-select option {
+  background: #1e1b4b;
+  color: white;
+}
+
+.filter-hint {
+  margin-top: 8px;
+  color: #a78bfa;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .panel h2,
@@ -143,6 +183,7 @@ dd {
 
 .mood-chart text {
   fill: #a8a2bd;
+  font-family: inherit;
   font-size: 15px;
   font-weight: 700;
 }

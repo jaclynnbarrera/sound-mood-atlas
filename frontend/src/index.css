@@ -1,6 +1,5 @@
 :root {
-  font-family:
-    "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   color: #f8f5ff;
   background: #11111d;
   font-synthesis: none;
@@ -11,7 +10,9 @@
   box-sizing: border-box;
 }
 
+html,
 body {
-  min-width: 320px;
   margin: 0;
+  font-family: var(--font-mono);
+  min-width: 320px;
 }
