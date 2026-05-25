@@ -3,7 +3,8 @@ const path = require('path');
 const csv = require('csv-parser');
 
 const inputPath = path.join(__dirname, '../data/dataset.csv');
-const outputPath = path.join(__dirname, '../data/songs.json');
+const outputPath = path.join(__dirname, '../../frontend/public/songs.json');
+const legacyOutputPath = path.join(__dirname, '../data/songs.json');
 
 const SONG_LIMIT = 250;
 
@@ -37,7 +38,11 @@ fs.createReadStream(inputPath)
             .sort((a, b) => b.popularity - a.popularity)
             .slice(0, SONG_LIMIT);
 
-        fs.writeFileSync(outputPath, JSON.stringify(mostPopularSongs, null, 2), 'utf8');
+        const json = JSON.stringify(mostPopularSongs, null, 2);
+
+        fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+        fs.writeFileSync(outputPath, json, 'utf8');
+        fs.writeFileSync(legacyOutputPath, json, 'utf8');
 
         console.log(`Done.`);
         console.log(`Wrote ${mostPopularSongs.length} most popular songs to ${outputPath}`);

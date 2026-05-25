@@ -5,8 +5,7 @@ const path = require('node:path');
 const http = require('node:http');
 const app = require('../src/server');
 
-const dataDir = path.join(__dirname, '..', 'data');
-const songsPath = path.join(dataDir, 'songs.json');
+const songsPath = path.join(__dirname, '..', '..', 'frontend', 'public', 'songs.json');
 
 let server;
 let port;

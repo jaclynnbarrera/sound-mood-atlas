@@ -5,7 +5,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const songsPath = path.join(__dirname, '../data/songs.json');
+const songsPath = path.join(__dirname, '../../frontend/public/songs.json');
 const publicPath = path.join(__dirname, '../public');
 
 app.use(express.static(publicPath));

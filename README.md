@@ -1,10 +1,10 @@
 # Sound Mood Atlas
 
-An interactive mood map for exploring music by **valence** and **energy**. Each dot is a track—position shows emotional tone, size shows tempo. Built as a portfolio piece combining data visualization, UI design, and full-stack web development.
+An interactive mood map for exploring music by **valence** and **energy**. Each dot is a track—position shows emotional tone, size shows tempo. Built as a portfolio piece combining data visualization, UI design, front-end development, and a Node.js data pipeline.
 
 **Repository:** [github.com/jaclynnbarrera/sound-mood-atlas](https://github.com/jaclynnbarrera/sound-mood-atlas)
 
-**Live demo:** _Coming soon — add your deployed URL here_
+**Live demo:** _Add your Vercel URL after deploy — see [Deployment](#deployment)_
 
 <img width="1502" height="875" alt="Screenshot 2026-05-25 at 11 55 34 AM" src="https://github.com/user-attachments/assets/b923ed6b-3ea0-4109-8b05-31fa77816b5f" />
 
@@ -26,11 +26,13 @@ An interactive mood map for exploring music by **valence** and **energy**. Each 
 
 | Layer | Tools |
 |--------|--------|
-| Frontend | React 19, Vite |
-| Backend | Node.js, Express 5 |
-| Data | CSV → JSON build pipeline (`songs.json`) |
+| Frontend | React 19, Vite, deployed on Vercel |
+| Data pipeline | Node.js script (`backend/scripts/buildChartData.js`) |
+| Chart data | Static `frontend/public/songs.json` |
 | Visualization | SVG scatter plot, CSS |
-| Tests | Node built-in test runner (API + data pipeline) |
+| Tests | Node built-in test runner (data pipeline + optional Express API) |
+
+The live app loads chart data from a static JSON file. The **backend** folder holds the CSV → JSON build script and an optional Express server for local API development.
 
 ---
 
@@ -38,16 +40,17 @@ An interactive mood map for exploring music by **valence** and **energy**. Each 
 
 ```
 sound-mood-atlas/
-├── frontend/              # React app (Vite)
+├── frontend/
+│   ├── public/
+│   │   └── songs.json       # chart dataset (served in dev & production)
 │   ├── src/
-│   └── public/
+│   └── vercel.json          # SPA routing for deploy
 ├── backend/
-│   ├── src/server.js      # API server
 │   ├── data/
-│   │   ├── dataset.csv    # source data (optional)
-│   │   └── songs.json     # chart dataset
+│   │   └── dataset.csv      # source data (optional)
 │   ├── scripts/
 │   │   └── buildChartData.js
+│   ├── src/server.js        # optional local API
 │   └── test/
 └── README.md
 ```
@@ -70,7 +73,7 @@ cd ../backend && npm install
 
 ### Data
 
-The API reads `backend/data/songs.json`. A built file is included in the repo.
+The chart reads **`frontend/public/songs.json`**. A built file is included in the repo.
 
 To regenerate from CSV (requires `backend/data/dataset.csv`):
 
@@ -79,49 +82,43 @@ cd backend
 npm run build:data
 ```
 
-This keeps the **top 250 rows by popularity** from the dataset.
+This writes the **top 250 rows by popularity** to `frontend/public/songs.json` (and keeps a copy in `backend/data/songs.json` for reference).
 
-### Run locally (development)
+### Run locally
 
-Use two terminals:
-
-**Terminal 1 — API**
-
-```bash
-cd backend
-npm start
-```
-
-Runs at [http://localhost:3000](http://localhost:3000) (`/api/songs`, `/api/health`).
-
-**Terminal 2 — Frontend**
+**One terminal is enough:**
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-Opens at [http://localhost:5173](http://localhost:5173) with `/api` proxied to the backend (see `frontend/vite.config.js`).
+Open [http://localhost:5173](http://localhost:5173). Vite serves `public/songs.json` at `/songs.json`.
 
-### Production build (frontend)
+**Optional — Express API** (same data, for testing the API):
+
+```bash
+cd backend
+npm start
+```
+
+Then use `http://localhost:3000/api/songs` (not used by the Vite app by default).
+
+### Production build
 
 ```bash
 cd frontend
 npm run build
+npm run preview
 ```
 
-Output: `frontend/dist/`. For a single production URL, serve this folder from Express alongside the API (see Deployment).
+Output: `frontend/dist/`.
 
 ---
 
-## API
+## Song data shape
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/health` | Health check `{ "status": "ok" }` |
-| `GET /api/songs` | Array of song objects for the chart |
-
-Example song object:
+Each item in `songs.json`:
 
 ```json
 {
@@ -164,23 +161,34 @@ cd backend
 npm test
 ```
 
-Covers the health check, songs API error handling, and the chart data build script.
+Covers the chart data build script and optional Express API routes (`/api/songs`, `/api/health`).
 
 ---
 
 ## Deployment
 
-**Recommended:** one Node service (e.g. [Render](https://render.com)) that:
+### Vercel (recommended)
 
-1. Builds the frontend: `cd frontend && npm ci && npm run build`
-2. Serves `frontend/dist` from Express alongside `/api/*`
-3. Starts with: `cd backend && npm start`
+1. Push this repo to GitHub.
+2. [vercel.com](https://vercel.com) → **Add New Project** → import `sound-mood-atlas`.
+3. Set **Root Directory** to `frontend`.
+4. Framework preset: **Vite** (defaults are usually fine).
+   - **Build command:** `npm run build`
+   - **Output directory:** `dist`
+5. Deploy → copy your URL (e.g. `https://sound-mood-atlas.vercel.app`).
+6. Paste it into the **Live demo** line at the top of this README.
 
-> **Note:** In development, Vite and the API run as separate processes. For production, Express should serve the Vite build so the app and API share one origin.
+`frontend/vercel.json` rewrites routes to `index.html` so URL query params (genre, track, etc.) work on refresh.
 
-Environment:
+**Before deploy:** ensure `frontend/public/songs.json` exists (run `npm run build:data` in `backend/` if needed).
 
-- `PORT` — set by the host (defaults to `3000` locally)
+### Regenerating data after deploy
+
+Vercel serves whatever `songs.json` is in the repo. To update the chart:
+
+1. Run `cd backend && npm run build:data`
+2. Commit `frontend/public/songs.json`
+3. Push → Vercel redeploys automatically
 
 ---
 
@@ -196,11 +204,11 @@ Environment:
 
 ## Roadmap
 
-- [ ] Live deployment URL
+- [x] Static JSON + Vercel deploy path
+- [ ] Live deployment URL in README
 - [ ] Dedupe tracks (one dot per song) and tune dataset size
 - [ ] Search by track or artist
 - [ ] CSV upload or demo playlists for “Upload your songs”
-- [ ] Screenshots and case study write-up
 
 ---
 

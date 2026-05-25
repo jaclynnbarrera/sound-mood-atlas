@@ -7,7 +7,7 @@ const { execFile } = require('node:child_process');
 const backendDir = path.join(__dirname, '..');
 const dataDir = path.join(backendDir, 'data');
 const csvPath = path.join(dataDir, 'dataset.csv');
-const songsPath = path.join(dataDir, 'songs.json');
+const songsPath = path.join(backendDir, '..', 'frontend', 'public', 'songs.json');
 
 let csvBackup;
 let songsBackup;
@@ -39,7 +39,7 @@ after(() => {
   else if (fs.existsSync(songsPath)) fs.unlinkSync(songsPath);
 });
 
-test('buildChartData generates least popular songs sorted ascending and skips invalid rows', async () => {
+test('buildChartData writes top popular songs and skips invalid rows', async () => {
   const csv = [
     'track_name,artists,track_genre,valence,energy,tempo,danceability,popularity',
     'Song A,Artist 1,pop,0.5,0.6,120,0.7,50',
@@ -62,13 +62,12 @@ test('buildChartData generates least popular songs sorted ascending and skips in
   // One row is invalid, so expect 3 items
   assert.equal(data.length, 3);
 
-  // Verify ascending by popularity and correctness of selected rows
+  // Descending by popularity (top tracks first)
   const popularities = data.map((s) => s.popularity);
-  const sorted = [...popularities].sort((a, b) => a - b);
-  assert.deepEqual(popularities, sorted);
+  const sortedDesc = [...popularities].sort((a, b) => b - a);
+  assert.deepEqual(popularities, sortedDesc);
 
-  // Expected order by ascending popularity: 10 (B), 30 (C), 50 (A)
-  assert.equal(data[0].track_name, 'Song B');
+  assert.equal(data[0].track_name, 'Song A');
   assert.equal(data[1].track_name, 'Song C');
-  assert.equal(data[2].track_name, 'Song A');
+  assert.equal(data[2].track_name, 'Song B');
 });

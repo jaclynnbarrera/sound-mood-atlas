@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 
-const API_URL = '/api/songs';
+const SONGS_URL = '/songs.json';
 const ALL_GENRES = '';
 
 function readUrlState() {
@@ -67,7 +67,7 @@ function App() {
   const hydratedFromUrlRef = useRef(false);
 
   useEffect(() => {
-    fetch(API_URL)
+    fetch(SONGS_URL)
         .then((response) => {
           if (!response.ok) {
             throw new Error('Could not load songs');
@@ -81,7 +81,7 @@ function App() {
         })
         .catch((error) => {
           console.error('Error loading songs:', error);
-          setStatus('Could not load songs. Is the backend running?');
+          setStatus('Could not load songs. Run npm run build:data in backend/ if songs.json is missing.');
         });
   }, []);
 
