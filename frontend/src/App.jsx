@@ -34,15 +34,19 @@ function App() {
 
   return (
       <main className="app-shell">
-        <section className="hero">
-          <p className="eyebrow">Prototype</p>
-          <h1>Sound Mood Atlas</h1>
-          <p className="subtitle">
-            Explore songs by mood: happier tracks move right, higher-energy tracks move up.
-          </p>
-        </section>
+        <div className="left-column">
+          <section className="hero">
+            <a href="https://github.com" className="github-icon" target="_blank" rel="noopener noreferrer">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+              </svg>
+            </a>
+            <h1>Sound Mood Atlas</h1>
+            <p className="subtitle">
+              Explore songs by mood. Happier tracks move right, higher-energy tracks move up. Visualize your music taste across two dimensions of emotional tone.
+            </p>
+          </section>
 
-        <section className="dashboard">
           <aside className="panel">
             <h2>Song details</h2>
 
@@ -81,18 +85,29 @@ function App() {
             </div>
           </aside>
 
-          <MoodChart songs={songs} selectedSong={selectedSong} onSelectSong={setSelectedSong} />
-        </section>
+          <button className="upload-btn">Upload your songs</button>
+        </div>
+
+        <MoodChart songs={songs} selectedSong={selectedSong} onSelectSong={setSelectedSong} />
       </main>
   );
 }
 
 function MoodChart({ songs, selectedSong, onSelectSong }) {
   const width = 900;
-  const height = 560;
+  const height = 720;
   const padding = 56;
   const plotWidth = width - padding * 2;
   const plotHeight = height - padding * 2;
+
+  const tempoValues = useMemo(
+    () => songs.map((song) => Number(song.tempo)).filter((tempo) => Number.isFinite(tempo)),
+    [songs]
+  );
+
+  const minTempo = tempoValues.length ? Math.min(...tempoValues) : 60;
+  const maxTempo = tempoValues.length ? Math.max(...tempoValues) : 180;
+  const tempoRange = Math.max(maxTempo - minTempo, 1);
 
   function getX(song) {
     return padding + song.valence * plotWidth;
@@ -100,6 +115,12 @@ function MoodChart({ songs, selectedSong, onSelectSong }) {
 
   function getY(song) {
     return height - padding - song.energy * plotHeight;
+  }
+
+  function getRadius(song) {
+    const tempo = Number(song.tempo);
+    const normalized = Number.isFinite(tempo) ? (tempo - minTempo) / tempoRange : 0.5;
+    return 4 + Math.min(Math.max(normalized, 0), 1) * 10;
   }
 
   return (
@@ -113,25 +134,49 @@ function MoodChart({ songs, selectedSong, onSelectSong }) {
         </div>
 
         <svg className="mood-chart" viewBox={`0 0 ${width} ${height}`} role="img">
-          <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} />
-          <line x1={padding} y1={padding} x2={padding} y2={height - padding} />
+          {/* Y-axis (left vertical line) */}
+          <line className="axis-line" x1={padding} y1={padding} x2={padding} y2={height - padding} />
+          
+          {/* X-axis (bottom horizontal line) */}
+          <line className="axis-line" x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} />
 
-          <text x={padding} y={height - 18}>Low valence</text>
-          <text x={width - padding - 86} y={height - 18}>High valence</text>
-          <text x={16} y={padding + 8}>High energy</text>
-          <text x={16} y={height - padding}>Low energy</text>
+          {/* Axis tick marks */}
+          {[0, 0.25, 0.5, 0.75, 1].map((value) => {
+            const x = padding + value * plotWidth;
+            const y = height - padding - value * plotHeight;
+            return (
+              <g key={`tick-${value}`}>
+                <line className="axis-tick" x1={x} y1={height - padding} x2={x} y2={height - padding + 8} />
+                <text className="axis-label" x={x} y={height - padding + 28} textAnchor="middle">
+                  {value.toFixed(2)}
+                </text>
+                <line className="axis-tick" x1={padding - 8} y1={y} x2={padding} y2={y} />
+                <text className="axis-label" x={padding - 12} y={y + 4} textAnchor="end">
+                  {(1 - value).toFixed(2)}
+                </text>
+              </g>
+            );
+          })}
 
-          <text className="quadrant-label" x={padding + 30} y={padding + 40}>
-            intense / moody
-          </text>
-          <text className="quadrant-label" x={width - padding - 150} y={padding + 40}>
-            joyful / energetic
-          </text>
-          <text className="quadrant-label" x={padding + 30} y={height - padding - 30}>
-            calm / somber
-          </text>
-          <text className="quadrant-label" x={width - padding - 130} y={height - padding - 30}>
-            warm / relaxed
+          {/* Optional light grid lines */}
+          {[...Array(10)].map((_, i) => {
+            const x = padding + ((i + 1) / 10) * plotWidth;
+            const y = height - padding - ((i + 1) / 10) * plotHeight;
+            return (
+              <g key={`grid-${i}`}>
+                <line x1={x} y1={padding} x2={x} y2={height - padding} className="grid-line" />
+                <line x1={padding} y1={y} x2={width - padding} y2={y} className="grid-line" />
+              </g>
+            );
+          })}
+
+          {/* Axis labels */}
+          <text x={padding} y={height - 18}>Sad</text>
+          <text x={width - padding - 60} y={height - 18}>Happy</text>
+          <text x={16} y={padding + 8}>Intense</text>
+          <text x={16} y={height - padding}>Chill</text>
+          <text className="axis-note" x={width - padding - 130} y={padding + 28}>
+            dot size = tempo
           </text>
 
           {songs.map((song) => {
@@ -142,10 +187,12 @@ function MoodChart({ songs, selectedSong, onSelectSong }) {
                     key={song.id}
                     cx={getX(song)}
                     cy={getY(song)}
-                    r={isSelected ? 7 : 4}
+                    r={isSelected ? Math.min(14, getRadius(song) + 2) : getRadius(song)}
                     className={isSelected ? 'song-dot selected' : 'song-dot'}
                     onMouseEnter={() => onSelectSong(song)}
+                    onMouseLeave={() => onSelectSong(null)}
                     onFocus={() => onSelectSong(song)}
+                    onBlur={() => onSelectSong(null)}
                     tabIndex="0"
                 />
             );

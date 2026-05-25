@@ -5,7 +5,7 @@ const csv = require('csv-parser');
 const inputPath = path.join(__dirname, '../data/dataset.csv');
 const outputPath = path.join(__dirname, '../data/songs.json');
 
-const SONG_LIMIT = 200;
+const SONG_LIMIT = 250;
 
 const songs = [];
 
