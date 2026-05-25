@@ -261,31 +261,24 @@ dd {
 
 .song-dot {
   fill: #ffffff;
+  stroke: none;
   opacity: 1;
   cursor: pointer;
-  transition:
-    r 160ms ease,
-    opacity 160ms ease,
-    fill 160ms ease,
-    stroke 160ms ease;
+  transition: r 160ms ease;
 }
 
 .song-dot:hover,
-.song-dot.selected {
-  fill: #000000;
-  stroke: #ffffff;
-  stroke-width: 2;
+.song-dot.selected,
+.song-dot:focus,
+.song-dot:focus-visible {
+  fill: #ffffff;
+  stroke: none;
   opacity: 1;
   outline: none;
 }
 
-/* Keep keyboard focus visible but maintain solid white fill by default */
-.song-dot:focus {
-  fill: #ffffff;
-  stroke: #ffffff;
-  stroke-width: 2;
-  opacity: 1;
-  outline: none;
+.song-dot:focus-visible {
+  filter: drop-shadow(0 0 4px #ffffff);
 }
 
 @media (max-width: 920px) {
