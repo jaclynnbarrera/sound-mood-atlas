@@ -1,6 +1,6 @@
 # Sound Mood Atlas
 
-An interactive mood map for exploring music by **valence** and **energy**. Each dot is a track—position shows emotional tone, size shows tempo. Built as a portfolio piece combining data visualization, UI design, front-end development, and a Node.js data pipeline.
+An interactive mood map for exploring music by **valence** and **energy**. Each dot is a track—position shows emotional tone, size shows tempo. Built by **Naomi Barrera** as a portfolio piece combining data visualization, UI design, front-end development, and a Node.js data pipeline.
 
 **Repository:** [github.com/jaclynnbarrera/sound-mood-atlas](https://github.com/jaclynnbarrera/sound-mood-atlas)
 
@@ -191,7 +191,7 @@ Production is a static Vite build on [Vercel](https://sound-mood-atlas.vercel.ap
 
 ## Author
 
-[Jaclyn Barrera](https://github.com/jaclynnbarrera) — [Sound Mood Atlas](https://github.com/jaclynnbarrera/sound-mood-atlas)
+[Naomi Barrera](https://github.com/jaclynnbarrera) — [Sound Mood Atlas](https://github.com/jaclynnbarrera/sound-mood-atlas)
 
 ---
 

@@ -9,7 +9,7 @@
     "build:data": "node scripts/buildChartData.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Naomi Barrera",
   "license": "ISC",
   "dependencies": {
     "csv-parser": "^3.2.0",

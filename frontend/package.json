@@ -2,6 +2,7 @@
   "name": "sound-mood-atlas",
   "private": true,
   "version": "0.0.0",
+  "author": "Naomi Barrera",
   "type": "module",
   "scripts": {
     "dev": "vite",
