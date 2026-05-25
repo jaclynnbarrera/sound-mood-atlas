@@ -4,7 +4,7 @@ An interactive mood map for exploring music by **valence** and **energy**. Each 
 
 **Repository:** [github.com/jaclynnbarrera/sound-mood-atlas](https://github.com/jaclynnbarrera/sound-mood-atlas)
 
-**Live demo:** _Add your Vercel URL after deploy — see [Deployment](#deployment)_
+**Live demo:** [sound-mood-atlas.vercel.app](https://sound-mood-atlas.vercel.app)
 
 <img width="1502" height="875" alt="Screenshot 2026-05-25 at 11 55 34 AM" src="https://github.com/user-attachments/assets/b923ed6b-3ea0-4109-8b05-31fa77816b5f" />
 
@@ -82,7 +82,7 @@ cd backend
 npm run build:data
 ```
 
-This writes the **top 250 rows by popularity** to `frontend/public/songs.json` (and keeps a copy in `backend/data/songs.json` for reference).
+This writes the **top 250 rows by popularity** to `frontend/public/songs.json` (and keeps a copy in `backend/data/songs.json` for reference). Commit `frontend/public/songs.json` after regenerating so the live site picks up changes on the next deploy.
 
 ### Run locally
 
@@ -165,30 +165,9 @@ Covers the chart data build script and optional Express API routes (`/api/songs`
 
 ---
 
-## Deployment
+## Hosting
 
-### Vercel (recommended)
-
-1. Push this repo to GitHub.
-2. [vercel.com](https://vercel.com) → **Add New Project** → import `sound-mood-atlas`.
-3. Set **Root Directory** to `frontend`.
-4. Framework preset: **Vite** (defaults are usually fine).
-   - **Build command:** `npm run build`
-   - **Output directory:** `dist`
-5. Deploy → copy your URL (e.g. `https://sound-mood-atlas.vercel.app`).
-6. Paste it into the **Live demo** line at the top of this README.
-
-`frontend/vercel.json` rewrites routes to `index.html` so URL query params (genre, track, etc.) work on refresh.
-
-**Before deploy:** ensure `frontend/public/songs.json` exists (run `npm run build:data` in `backend/` if needed).
-
-### Regenerating data after deploy
-
-Vercel serves whatever `songs.json` is in the repo. To update the chart:
-
-1. Run `cd backend && npm run build:data`
-2. Commit `frontend/public/songs.json`
-3. Push → Vercel redeploys automatically
+Production is a static Vite build on [Vercel](https://sound-mood-atlas.vercel.app), with chart data in `frontend/public/songs.json`. SPA routing (`frontend/vercel.json`) keeps shareable URL params working on refresh.
 
 ---
 
@@ -204,8 +183,6 @@ Vercel serves whatever `songs.json` is in the repo. To update the chart:
 
 ## Roadmap
 
-- [x] Static JSON + Vercel deploy path
-- [ ] Live deployment URL in README
 - [ ] Dedupe tracks (one dot per song) and tune dataset size
 - [ ] Search by track or artist
 - [ ] CSV upload or demo playlists for “Upload your songs”
