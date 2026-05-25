@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import './App.css';
 
 const API_URL = '/api/songs';
+const ALL_GENRES = '';
 
 function App() {
   const [songs, setSongs] = useState([]);
   const [selectedSong, setSelectedSong] = useState(null);
+  const [selectedGenre, setSelectedGenre] = useState(ALL_GENRES);
   const [status, setStatus] = useState('Loading songs...');
 
   useEffect(() => {
@@ -32,20 +34,58 @@ function App() {
     return Array.from(uniqueGenres).sort();
   }, [songs]);
 
+  const filteredSongs = useMemo(() => {
+    if (!selectedGenre) {
+      return songs;
+    }
+
+    return songs.filter((song) => song.genre === selectedGenre);
+  }, [songs, selectedGenre]);
+
+  useEffect(() => {
+    if (!selectedSong) {
+      return;
+    }
+
+    const stillVisible = filteredSongs.some(
+      (song) =>
+        song.track_name === selectedSong.track_name &&
+        song.artist === selectedSong.artist &&
+        song.genre === selectedSong.genre
+    );
+
+    if (!stillVisible) {
+      setSelectedSong(null);
+    }
+  }, [filteredSongs, selectedSong]);
+
+  const trackCountLabel =
+    selectedGenre && filteredSongs.length !== songs.length
+      ? `${filteredSongs.length} of ${songs.length} tracks`
+      : `${songs.length} tracks`;
+
   return (
       <main className="app-shell">
+        <header className="page-header page-header-left">
+          <h1>Sound Mood Atlas</h1>
+          <a href="https://github.com" className="github-icon" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+            </svg>
+          </a>
+        </header>
+
+        <GenreFilterBar
+          genres={genres}
+          selectedGenre={selectedGenre}
+          onGenreChange={setSelectedGenre}
+          trackCountLabel={trackCountLabel}
+        />
+
         <div className="left-column">
-          <section className="hero">
-            <a href="https://github.com" className="github-icon" target="_blank" rel="noopener noreferrer">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-              </svg>
-            </a>
-            <h1>Sound Mood Atlas</h1>
-            <p className="subtitle">
-              Explore songs by mood. Happier tracks move right, higher-energy tracks move up. Visualize your music taste across two dimensions of emotional tone.
-            </p>
-          </section>
+          <p className="subtitle">
+            Explore songs by mood. Happier tracks move right, higher-energy tracks move up. Visualize your music taste across two dimensions of emotional tone.
+          </p>
 
           <aside className="panel">
             <h2>Song details</h2>
@@ -85,25 +125,36 @@ function App() {
             </div>
           </aside>
 
+          <ChartLegend />
+
           <button className="upload-btn">Upload your songs</button>
         </div>
 
-        <MoodChart songs={songs} selectedSong={selectedSong} onSelectSong={setSelectedSong} />
+        <MoodChart
+          songs={filteredSongs}
+          selectedSong={selectedSong}
+          onSelectSong={setSelectedSong}
+          emptyMessage={
+            selectedGenre && filteredSongs.length === 0
+              ? `No tracks found for “${selectedGenre}”.`
+              : null
+          }
+        />
       </main>
   );
 }
 
-function MoodChart({ songs, selectedSong, onSelectSong }) {
+function MoodChart({ songs, selectedSong, onSelectSong, emptyMessage }) {
   const width = 900;
-  const height = 720;
-  const padding = 80;
-  const labelInset = 24;
-  const plotWidth = width - padding * 2;
-  const plotHeight = height - padding * 2;
-  const plotLeft = padding;
-  const plotRight = width - padding;
-  const plotTop = padding;
-  const plotBottom = height - padding;
+  const height = 760;
+  const margin = { top: 40, right: 40, bottom: 52, left: 36 };
+  const sparseTicks = [0, 0.5, 1];
+  const plotLeft = margin.left;
+  const plotRight = width - margin.right;
+  const plotTop = margin.top;
+  const plotBottom = height - margin.bottom;
+  const plotWidth = plotRight - plotLeft;
+  const plotHeight = plotBottom - plotTop;
 
   const tempoValues = useMemo(
     () => songs.map((song) => Number(song.tempo)).filter((tempo) => Number.isFinite(tempo)),
@@ -115,11 +166,11 @@ function MoodChart({ songs, selectedSong, onSelectSong }) {
   const tempoRange = Math.max(maxTempo - minTempo, 1);
 
   function getX(song) {
-    return padding + song.valence * plotWidth;
+    return plotLeft + song.valence * plotWidth;
   }
 
   function getY(song) {
-    return height - padding - song.energy * plotHeight;
+    return plotBottom - song.energy * plotHeight;
   }
 
   function getRadius(song) {
@@ -130,15 +181,19 @@ function MoodChart({ songs, selectedSong, onSelectSong }) {
 
   return (
       <section className="chart-card">
-        <div className="chart-header">
-          <div>
-            <h2>Mood map</h2>
-            <p>Valence × Energy</p>
-          </div>
-          <span>{songs.length} tracks</span>
-        </div>
-
-        <svg className="mood-chart" viewBox={`0 0 ${width} ${height}`} role="img">
+        <div className="chart-body">
+          {emptyMessage ? (
+            <p className="chart-empty">{emptyMessage}</p>
+          ) : null}
+          <div className="chart-frame">
+            <p className="chart-axis-label chart-axis-label-y">Energy</p>
+            <div className="chart-plot-wrap">
+        <svg
+          className="mood-chart"
+          viewBox={`0 0 ${width} ${height}`}
+          preserveAspectRatio="xMinYMin meet"
+          role="img"
+        >
           <defs>
             <radialGradient id="song-dot-gradient" cx="32%" cy="28%" r="72%">
               <stop offset="0%" stopColor="#ffffff" />
@@ -148,24 +203,26 @@ function MoodChart({ songs, selectedSong, onSelectSong }) {
           </defs>
 
           {/* Y-axis (left vertical line) */}
-          <line className="axis-line" x1={padding} y1={padding} x2={padding} y2={height - padding} />
-          
-          {/* X-axis (bottom horizontal line) */}
-          <line className="axis-line" x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} />
+          <line className="axis-line" x1={plotLeft} y1={plotTop} x2={plotLeft} y2={plotBottom} />
 
-          {/* Axis tick marks */}
-          {[0, 0.25, 0.5, 0.75, 1].map((value) => {
-            const x = padding + value * plotWidth;
-            const y = height - padding - value * plotHeight;
+          {/* X-axis (bottom horizontal line) */}
+          <line className="axis-line" x1={plotLeft} y1={plotBottom} x2={plotRight} y2={plotBottom} />
+
+          {/* Sparse axis ticks (0, 0.5, 1) */}
+          {sparseTicks.map((value) => {
+            const x = plotLeft + value * plotWidth;
+            const y = plotBottom - value * plotHeight;
+            const tickLabel = value.toFixed(1);
+
             return (
               <g key={`tick-${value}`}>
-                <line className="axis-tick" x1={x} y1={height - padding} x2={x} y2={height - padding + 8} />
-                <text className="axis-label" x={x} y={plotBottom + 36} textAnchor="middle">
-                  {value.toFixed(2)}
+                <line className="axis-tick" x1={x} y1={plotBottom} x2={x} y2={plotBottom + 8} />
+                <text className="axis-label" x={x} y={plotBottom + 26} textAnchor="middle">
+                  {tickLabel}
                 </text>
-                <line className="axis-tick" x1={padding - 8} y1={y} x2={padding} y2={y} />
+                <line className="axis-tick" x1={plotLeft - 8} y1={y} x2={plotLeft} y2={y} />
                 <text className="axis-label" x={plotLeft - 20} y={y + 4} textAnchor="end">
-                  {(1 - value).toFixed(2)}
+                  {tickLabel}
                 </text>
               </g>
             );
@@ -173,49 +230,45 @@ function MoodChart({ songs, selectedSong, onSelectSong }) {
 
           {/* Optional light grid lines */}
           {[...Array(10)].map((_, i) => {
-            const x = padding + ((i + 1) / 10) * plotWidth;
-            const y = height - padding - ((i + 1) / 10) * plotHeight;
+            const x = plotLeft + ((i + 1) / 10) * plotWidth;
+            const y = plotBottom - ((i + 1) / 10) * plotHeight;
             return (
               <g key={`grid-${i}`}>
-                <line x1={x} y1={padding} x2={x} y2={height - padding} className="grid-line" />
-                <line x1={padding} y1={y} x2={width - padding} y2={y} className="grid-line" />
+                <line x1={x} y1={plotTop} x2={x} y2={plotBottom} className="grid-line" />
+                <line x1={plotLeft} y1={y} x2={plotRight} y2={y} className="grid-line" />
               </g>
             );
           })}
 
-          {/* Mood descriptors inside the plot (away from axis tick values) */}
-          <text className="quadrant-label" x={plotLeft + labelInset} y={plotTop + labelInset + 14}>
-            Intense
-          </text>
-          <text className="quadrant-label" x={plotLeft + labelInset} y={plotBottom - labelInset}>
-            Sad
-          </text>
-          <text
-            className="quadrant-label"
-            x={plotRight - labelInset}
-            y={plotBottom - labelInset}
-            textAnchor="end"
-          >
-            Happy
-          </text>
-          <text
-            className="quadrant-label"
-            x={width / 2}
-            y={plotBottom - labelInset}
-            textAnchor="middle"
-          >
-            Chill
-          </text>
+          {[...songs]
+            .sort((a, b) => {
+              const aSelected =
+                selectedSong?.track_name === a.track_name &&
+                selectedSong?.artist === a.artist &&
+                selectedSong?.genre === a.genre;
+              const bSelected =
+                selectedSong?.track_name === b.track_name &&
+                selectedSong?.artist === b.artist &&
+                selectedSong?.genre === b.genre;
 
-          {songs.map((song) => {
-            const isSelected = selectedSong?.id === song.id;
+              if (aSelected === bSelected) {
+                return 0;
+              }
+
+              return aSelected ? 1 : -1;
+            })
+            .map((song, index) => {
+            const isSelected =
+              selectedSong?.track_name === song.track_name &&
+              selectedSong?.artist === song.artist &&
+              selectedSong?.genre === song.genre;
 
             return (
                 <circle
-                    key={song.id}
+                    key={`${song.track_name}-${song.artist}-${song.genre}-${index}`}
                     cx={getX(song)}
                     cy={getY(song)}
-                    r={isSelected ? Math.min(14, getRadius(song) + 2) : getRadius(song)}
+                    r={getRadius(song)}
                     className={isSelected ? 'song-dot selected' : 'song-dot'}
                     onMouseEnter={() => onSelectSong(song)}
                     onMouseLeave={() => onSelectSong(null)}
@@ -226,32 +279,93 @@ function MoodChart({ songs, selectedSong, onSelectSong }) {
             );
           })}
         </svg>
-
-        <div className="chart-legend" aria-label="Dot size represents tempo">
-          <p className="chart-legend-title">Dot size = tempo</p>
-          <div className="chart-legend-scale">
-            {[
-              { r: 4, label: 'Slower' },
-              { r: 9, label: 'Mid' },
-              { r: 14, label: 'Faster' },
-            ].map(({ r, label }) => (
-              <div key={label} className="chart-legend-item">
-                <svg className="chart-legend-dot" viewBox="0 0 40 40" aria-hidden="true">
-                  <defs>
-                    <radialGradient id={`legend-dot-gradient-${r}`} cx="32%" cy="28%" r="72%">
-                      <stop offset="0%" stopColor="#ffffff" />
-                      <stop offset="45%" stopColor="#f0ebff" />
-                      <stop offset="100%" stopColor="#b794ff" />
-                    </radialGradient>
-                  </defs>
-                  <circle cx="20" cy="20" r={r} fill={`url(#legend-dot-gradient-${r})`} />
-                </svg>
-                <span>{label}</span>
-              </div>
-            ))}
+            </div>
           </div>
+          <p className="chart-axis-label chart-axis-label-x">Valence</p>
         </div>
       </section>
+  );
+}
+
+function GenreFilterBar({ genres, selectedGenre, onGenreChange, trackCountLabel }) {
+  return (
+    <div className="chart-filter-bar">
+      <span className="chart-filter-label">Genre</span>
+      <div className="chart-filter-scroll">
+        <div className="chart-filter-options" role="group" aria-label="Filter by genre">
+          <button
+            type="button"
+            className={`chart-filter-chip${selectedGenre === ALL_GENRES ? ' is-active' : ''}`}
+            aria-pressed={selectedGenre === ALL_GENRES}
+            onClick={() => onGenreChange(ALL_GENRES)}
+          >
+            All
+          </button>
+          {genres.map((genre) => (
+            <button
+              key={genre}
+              type="button"
+              className={`chart-filter-chip${selectedGenre === genre ? ' is-active' : ''}`}
+              aria-pressed={selectedGenre === genre}
+              onClick={() => onGenreChange(genre)}
+            >
+              {genre}
+            </button>
+          ))}
+        </div>
+      </div>
+      <span className="chart-filter-meta">{trackCountLabel}</span>
+    </div>
+  );
+}
+
+function ChartLegend() {
+  return (
+    <div className="chart-legend" aria-label="How to read the mood map">
+      <h3 className="chart-legend-heading">How to read this map</h3>
+      <p className="chart-legend-intro">
+        Each dot is a song. Position shows mood; size shows tempo.
+      </p>
+
+      <div className="chart-legend-axes">
+        <div className="chart-legend-axis-row">
+          <span className="chart-legend-axis-arrow" aria-hidden="true">←</span>
+          <span className="chart-legend-axis-name">Valence</span>
+          <span className="chart-legend-axis-scale">sad ········· happy</span>
+          <span className="chart-legend-axis-arrow" aria-hidden="true">→</span>
+        </div>
+        <div className="chart-legend-axis-row">
+          <span className="chart-legend-axis-arrow" aria-hidden="true">↑</span>
+          <span className="chart-legend-axis-name">Energy</span>
+          <span className="chart-legend-axis-scale">chill ········· intense</span>
+        </div>
+      </div>
+
+      <div className="chart-legend-tempo">
+        <p className="chart-legend-subheading">Dot size = tempo</p>
+        <div className="chart-legend-scale">
+          {[
+            { r: 4, label: 'Slower' },
+            { r: 9, label: 'Mid' },
+            { r: 14, label: 'Faster' },
+          ].map(({ r, label }) => (
+            <div key={label} className="chart-legend-item">
+              <svg className="chart-legend-dot" viewBox="0 0 40 40" aria-hidden="true">
+                <defs>
+                  <radialGradient id={`legend-dot-gradient-${r}`} cx="32%" cy="28%" r="72%">
+                    <stop offset="0%" stopColor="#ffffff" />
+                    <stop offset="45%" stopColor="#f0ebff" />
+                    <stop offset="100%" stopColor="#b794ff" />
+                  </radialGradient>
+                </defs>
+                <circle cx="20" cy="20" r={r} fill={`url(#legend-dot-gradient-${r})`} />
+              </svg>
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
