@@ -96,9 +96,14 @@ function App() {
 function MoodChart({ songs, selectedSong, onSelectSong }) {
   const width = 900;
   const height = 720;
-  const padding = 56;
+  const padding = 80;
+  const labelInset = 24;
   const plotWidth = width - padding * 2;
   const plotHeight = height - padding * 2;
+  const plotLeft = padding;
+  const plotRight = width - padding;
+  const plotTop = padding;
+  const plotBottom = height - padding;
 
   const tempoValues = useMemo(
     () => songs.map((song) => Number(song.tempo)).filter((tempo) => Number.isFinite(tempo)),
@@ -134,6 +139,14 @@ function MoodChart({ songs, selectedSong, onSelectSong }) {
         </div>
 
         <svg className="mood-chart" viewBox={`0 0 ${width} ${height}`} role="img">
+          <defs>
+            <radialGradient id="song-dot-gradient" cx="32%" cy="28%" r="72%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="45%" stopColor="#f0ebff" />
+              <stop offset="100%" stopColor="#b794ff" />
+            </radialGradient>
+          </defs>
+
           {/* Y-axis (left vertical line) */}
           <line className="axis-line" x1={padding} y1={padding} x2={padding} y2={height - padding} />
           
@@ -147,11 +160,11 @@ function MoodChart({ songs, selectedSong, onSelectSong }) {
             return (
               <g key={`tick-${value}`}>
                 <line className="axis-tick" x1={x} y1={height - padding} x2={x} y2={height - padding + 8} />
-                <text className="axis-label" x={x} y={height - padding + 28} textAnchor="middle">
+                <text className="axis-label" x={x} y={plotBottom + 36} textAnchor="middle">
                   {value.toFixed(2)}
                 </text>
                 <line className="axis-tick" x1={padding - 8} y1={y} x2={padding} y2={y} />
-                <text className="axis-label" x={padding - 12} y={y + 4} textAnchor="end">
+                <text className="axis-label" x={plotLeft - 20} y={y + 4} textAnchor="end">
                   {(1 - value).toFixed(2)}
                 </text>
               </g>
@@ -170,13 +183,28 @@ function MoodChart({ songs, selectedSong, onSelectSong }) {
             );
           })}
 
-          {/* Axis labels */}
-          <text x={padding} y={height - 18}>Sad</text>
-          <text x={width - padding - 60} y={height - 18}>Happy</text>
-          <text x={16} y={padding + 8}>Intense</text>
-          <text x={16} y={height - padding}>Chill</text>
-          <text className="axis-note" x={width - padding - 130} y={padding + 28}>
-            dot size = tempo
+          {/* Mood descriptors inside the plot (away from axis tick values) */}
+          <text className="quadrant-label" x={plotLeft + labelInset} y={plotTop + labelInset + 14}>
+            Intense
+          </text>
+          <text className="quadrant-label" x={plotLeft + labelInset} y={plotBottom - labelInset}>
+            Sad
+          </text>
+          <text
+            className="quadrant-label"
+            x={plotRight - labelInset}
+            y={plotBottom - labelInset}
+            textAnchor="end"
+          >
+            Happy
+          </text>
+          <text
+            className="quadrant-label"
+            x={width / 2}
+            y={plotBottom - labelInset}
+            textAnchor="middle"
+          >
+            Chill
           </text>
 
           {songs.map((song) => {
@@ -198,6 +226,31 @@ function MoodChart({ songs, selectedSong, onSelectSong }) {
             );
           })}
         </svg>
+
+        <div className="chart-legend" aria-label="Dot size represents tempo">
+          <p className="chart-legend-title">Dot size = tempo</p>
+          <div className="chart-legend-scale">
+            {[
+              { r: 4, label: 'Slower' },
+              { r: 9, label: 'Mid' },
+              { r: 14, label: 'Faster' },
+            ].map(({ r, label }) => (
+              <div key={label} className="chart-legend-item">
+                <svg className="chart-legend-dot" viewBox="0 0 40 40" aria-hidden="true">
+                  <defs>
+                    <radialGradient id={`legend-dot-gradient-${r}`} cx="32%" cy="28%" r="72%">
+                      <stop offset="0%" stopColor="#ffffff" />
+                      <stop offset="45%" stopColor="#f0ebff" />
+                      <stop offset="100%" stopColor="#b794ff" />
+                    </radialGradient>
+                  </defs>
+                  <circle cx="20" cy="20" r={r} fill={`url(#legend-dot-gradient-${r})`} />
+                </svg>
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
   );
 }

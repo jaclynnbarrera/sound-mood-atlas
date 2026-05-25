@@ -204,7 +204,7 @@ dd {
   gap: 16px;
   margin-top: 0;
   margin-bottom: 18px;
-  padding-left: 56px;
+  padding-left: 80px;
 }
 
 .chart-header span {
@@ -216,6 +216,52 @@ dd {
   width: 100%;
   height: auto;
   overflow: visible;
+}
+
+.chart-legend {
+  margin-top: 20px;
+  padding: 16px 80px 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.chart-legend-title {
+  margin: 0 0 14px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.chart-legend-scale {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 48px;
+}
+
+.chart-legend-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.chart-legend-dot {
+  width: 40px;
+  height: 40px;
+  overflow: visible;
+  filter:
+    drop-shadow(0 0 2px rgba(255, 255, 255, 0.45))
+    drop-shadow(0 0 6px rgba(183, 148, 255, 0.28));
+}
+
+.chart-legend-dot circle {
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .mood-chart .axis-line {
@@ -246,39 +292,25 @@ dd {
   font-weight: 600;
 }
 
-.mood-chart .axis-note {
-  fill: rgba(255, 255, 255, 0.7);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-}
-
 .mood-chart .quadrant-label {
   fill: #bbbbbb;
   font-size: 18px;
   letter-spacing: 0.02em;
+  pointer-events: none;
+  user-select: none;
 }
 
 .song-dot {
-  fill: #ffffff;
+  fill: url(#song-dot-gradient);
   stroke: none;
   opacity: 1;
   cursor: pointer;
-  transition: r 160ms ease;
-}
-
-.song-dot:hover,
-.song-dot.selected,
-.song-dot:focus,
-.song-dot:focus-visible {
-  fill: #ffffff;
-  stroke: none;
-  opacity: 1;
-  outline: none;
-}
-
-.song-dot:focus-visible {
-  filter: drop-shadow(0 0 4px #ffffff);
+  filter:
+    drop-shadow(0 0 2px rgba(255, 255, 255, 0.45))
+    drop-shadow(0 0 6px rgba(183, 148, 255, 0.28));
+  transition:
+    r 160ms ease,
+    filter 160ms ease;
 }
 
 @media (max-width: 920px) {
