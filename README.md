@@ -4,6 +4,8 @@ An interactive mood map for exploring music by **valence** and **energy**. Each 
 
 **Live demo:** _Coming soon — add your deployed URL here_
 
+<img width="1502" height="875" alt="Screenshot 2026-05-25 at 11 55 34 AM" src="https://github.com/user-attachments/assets/b923ed6b-3ea0-4109-8b05-31fa77816b5f" />
+
 ---
 
 ## Features
