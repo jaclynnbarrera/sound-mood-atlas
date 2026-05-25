@@ -1,14 +1,70 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 
 const API_URL = '/api/songs';
 const ALL_GENRES = '';
+
+function readUrlState() {
+  const params = new URLSearchParams(window.location.search);
+
+  return {
+    genre: params.get('genre') ?? '',
+    track: params.get('track'),
+    artist: params.get('artist'),
+    songGenre: params.get('songGenre'),
+  };
+}
+
+function writeUrlState({ genre, selectedSong }) {
+  const params = new URLSearchParams();
+
+  if (genre) {
+    params.set('genre', genre);
+  }
+
+  if (selectedSong) {
+    params.set('track', selectedSong.track_name);
+    params.set('artist', selectedSong.artist);
+    if (selectedSong.genre) {
+      params.set('songGenre', selectedSong.genre);
+    }
+  }
+
+  const search = params.toString();
+  const nextUrl = `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`;
+  const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+  if (nextUrl !== currentUrl) {
+    window.history.replaceState(null, '', nextUrl);
+  }
+}
+
+function findSongFromUrl(songs, { track, artist, songGenre }) {
+  if (!track || !artist) {
+    return null;
+  }
+
+  if (songGenre) {
+    const exactMatch = songs.find(
+      (song) =>
+        song.track_name === track && song.artist === artist && song.genre === songGenre
+    );
+
+    if (exactMatch) {
+      return exactMatch;
+    }
+  }
+
+  return songs.find((song) => song.track_name === track && song.artist === artist) ?? null;
+}
 
 function App() {
   const [songs, setSongs] = useState([]);
   const [selectedSong, setSelectedSong] = useState(null);
   const [selectedGenre, setSelectedGenre] = useState(ALL_GENRES);
   const [status, setStatus] = useState('Loading songs...');
+  const [urlStateReady, setUrlStateReady] = useState(false);
+  const hydratedFromUrlRef = useRef(false);
 
   useEffect(() => {
     fetch(API_URL)
@@ -58,6 +114,57 @@ function App() {
       setSelectedSong(null);
     }
   }, [filteredSongs, selectedSong]);
+
+  useEffect(() => {
+    if (!songs.length || hydratedFromUrlRef.current) {
+      return;
+    }
+
+    hydratedFromUrlRef.current = true;
+
+    const { genre, track, artist, songGenre } = readUrlState();
+    const validGenre = genre && genres.includes(genre) ? genre : ALL_GENRES;
+
+    setSelectedGenre(validGenre);
+
+    const songFromUrl = findSongFromUrl(songs, { track, artist, songGenre });
+    if (songFromUrl && (!validGenre || songFromUrl.genre === validGenre)) {
+      setSelectedSong(songFromUrl);
+    }
+
+    setUrlStateReady(true);
+  }, [songs, genres]);
+
+  useEffect(() => {
+    if (!urlStateReady) {
+      return;
+    }
+
+    writeUrlState({ genre: selectedGenre, selectedSong });
+  }, [selectedGenre, selectedSong, urlStateReady]);
+
+  useEffect(() => {
+    if (!songs.length) {
+      return;
+    }
+
+    function handlePopState() {
+      const { genre, track, artist, songGenre } = readUrlState();
+      const validGenre = genre && genres.includes(genre) ? genre : ALL_GENRES;
+
+      setSelectedGenre(validGenre);
+
+      const songFromUrl = findSongFromUrl(songs, { track, artist, songGenre });
+      if (songFromUrl && (!validGenre || songFromUrl.genre === validGenre)) {
+        setSelectedSong(songFromUrl);
+      } else {
+        setSelectedSong(null);
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [songs, genres]);
 
   const trackCountLabel =
     selectedGenre && filteredSongs.length !== songs.length
