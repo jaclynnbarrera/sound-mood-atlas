@@ -2,6 +2,8 @@
 
 An interactive mood map for exploring music by **valence** and **energy**. Each dot is a track—position shows emotional tone, size shows tempo. Built as a portfolio piece combining data visualization, UI design, and full-stack web development.
 
+**Repository:** [github.com/jaclynnbarrera/sound-mood-atlas](https://github.com/jaclynnbarrera/sound-mood-atlas)
+
 **Live demo:** _Coming soon — add your deployed URL here_
 
 <img width="1502" height="875" alt="Screenshot 2026-05-25 at 11 55 34 AM" src="https://github.com/user-attachments/assets/b923ed6b-3ea0-4109-8b05-31fa77816b5f" />
@@ -199,6 +201,12 @@ Environment:
 - [ ] Search by track or artist
 - [ ] CSV upload or demo playlists for “Upload your songs”
 - [ ] Screenshots and case study write-up
+
+---
+
+## Author
+
+[Jaclyn Barrera](https://github.com/jaclynnbarrera) — [Sound Mood Atlas](https://github.com/jaclynnbarrera/sound-mood-atlas)
 
 ---
 
