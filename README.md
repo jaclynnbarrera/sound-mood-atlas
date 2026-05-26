@@ -6,7 +6,7 @@ An interactive mood map for exploring music by **valence** and **energy**. Each 
 
 **Live demo:** [sound-mood-atlas.vercel.app](https://sound-mood-atlas.vercel.app)
 
-<img width="1502" height="875" alt="Screenshot 2026-05-25 at 11 55 34 AM" src="https://github.com/user-attachments/assets/b923ed6b-3ea0-4109-8b05-31fa77816b5f" />
+<img width="1508" height="870" alt="Screenshot 2026-05-25 at 5 20 44 PM" src="https://github.com/user-attachments/assets/978dce96-ca7e-4b71-aae9-a2358f8cb6da" />
 
 ---
 
