@@ -4,6 +4,28 @@ import './App.css';
 const SONGS_URL = '/songs.json';
 const ALL_GENRES = '';
 
+const DANCEABILITY_COLOR_LOW = [110, 158, 200];
+const DANCEABILITY_COLOR_HIGH = [232, 168, 106];
+
+function clamp01(value) {
+  return Math.min(1, Math.max(0, value));
+}
+
+function danceabilityColor(danceability) {
+  const t = clamp01(Number(danceability) || 0);
+  const r = Math.round(
+    DANCEABILITY_COLOR_LOW[0] + (DANCEABILITY_COLOR_HIGH[0] - DANCEABILITY_COLOR_LOW[0]) * t
+  );
+  const g = Math.round(
+    DANCEABILITY_COLOR_LOW[1] + (DANCEABILITY_COLOR_HIGH[1] - DANCEABILITY_COLOR_LOW[1]) * t
+  );
+  const b = Math.round(
+    DANCEABILITY_COLOR_LOW[2] + (DANCEABILITY_COLOR_HIGH[2] - DANCEABILITY_COLOR_LOW[2]) * t
+  );
+
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 function readUrlState() {
   const params = new URLSearchParams(window.location.search);
 
@@ -198,7 +220,7 @@ function App() {
 
         <div className="left-column">
           <p className="subtitle">
-            Explore songs by mood. Happier tracks move right, higher-energy tracks move up. Visualize your music taste across two dimensions of emotional tone.
+            Explore songs by mood. Happier tracks move right, higher-energy tracks move up, and color shows how danceable each track is.
           </p>
 
           <aside className="panel">
@@ -221,6 +243,10 @@ function App() {
                     <div>
                       <dt>Energy</dt>
                       <dd>{selectedSong.energy.toFixed(2)}</dd>
+                    </div>
+                    <div>
+                      <dt>Danceability</dt>
+                      <dd>{Number(selectedSong.danceability).toFixed(2)}</dd>
                     </div>
                     <div>
                       <dt>Popularity</dt>
@@ -307,14 +333,6 @@ function MoodChart({ songs, selectedSong, onSelectSong, emptyMessage }) {
           preserveAspectRatio="xMinYMin meet"
           role="img"
         >
-          <defs>
-            <radialGradient id="song-dot-gradient" cx="32%" cy="28%" r="72%">
-              <stop offset="0%" stopColor="#ffffff" />
-              <stop offset="45%" stopColor="#f0ebff" />
-              <stop offset="100%" stopColor="#b794ff" />
-            </radialGradient>
-          </defs>
-
           {/* Y-axis (left vertical line) */}
           <line className="axis-line" x1={plotLeft} y1={plotTop} x2={plotLeft} y2={plotBottom} />
 
@@ -382,6 +400,7 @@ function MoodChart({ songs, selectedSong, onSelectSong, emptyMessage }) {
                     cx={getX(song)}
                     cy={getY(song)}
                     r={getRadius(song)}
+                    fill={danceabilityColor(song.danceability)}
                     className={isSelected ? 'song-dot selected' : 'song-dot'}
                     onMouseEnter={() => onSelectSong(song)}
                     onMouseLeave={() => onSelectSong(null)}
@@ -437,7 +456,7 @@ function ChartLegend() {
     <div className="chart-legend" aria-label="How to read the mood map">
       <h3 className="chart-legend-heading">How to read this map</h3>
       <p className="chart-legend-intro">
-        Each dot is a song. Position shows mood; size shows tempo.
+        Each dot is a song. Position shows mood; size shows tempo; color shows danceability.
       </p>
 
       <div className="chart-legend-axes">
@@ -451,6 +470,33 @@ function ChartLegend() {
           <span className="chart-legend-axis-arrow" aria-hidden="true">↑</span>
           <span className="chart-legend-axis-name">Energy</span>
           <span className="chart-legend-axis-scale">chill ········· intense</span>
+        </div>
+      </div>
+
+      <div className="chart-legend-danceability">
+        <p className="chart-legend-subheading">Dot color = danceability</p>
+        <div
+          className="chart-legend-colorbar"
+          role="img"
+          aria-label="Danceability color scale from low cool blue to high warm gold"
+        />
+        <div className="chart-legend-colorbar-labels">
+          <span>Low</span>
+          <span>High</span>
+        </div>
+        <div className="chart-legend-scale chart-legend-scale-color">
+          {[
+            { t: 0, label: 'Low' },
+            { t: 0.5, label: 'Mid' },
+            { t: 1, label: 'High' },
+          ].map(({ t, label }) => (
+            <div key={label} className="chart-legend-item">
+              <svg className="chart-legend-dot" viewBox="0 0 40 40" aria-hidden="true">
+                <circle cx="20" cy="20" r={10} fill={danceabilityColor(t)} />
+              </svg>
+              <span>{label}</span>
+            </div>
+          ))}
         </div>
       </div>
 
