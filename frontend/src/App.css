@@ -1,14 +1,15 @@
 .app-shell {
   --page-pad-x: 32px;
   --page-pad-top: 24px;
+  --danceability-low: rgb(110, 158, 200);
+  --danceability-high: rgb(232, 168, 106);
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto auto 1fr;
   grid-template-areas:
     'header'
     'filters'
-    'chart'
-    'legend';
+    'chart';
   height: 100vh;
   overflow: hidden;
   color: #ffffff;
@@ -20,9 +21,31 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 16px 24px;
   padding: var(--page-pad-top) var(--page-pad-x) 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.page-header-brand {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  min-width: 0;
+}
+
+.page-header-tagline {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+
+.page-header-tagline strong {
+  color: rgba(255, 255, 255, 0.88);
+  font-weight: 600;
 }
 
 .page-header h1 {
@@ -31,16 +54,98 @@
   font-family: 'Georgia', 'Garamond', serif;
   font-weight: 400;
   line-height: 1;
+  white-space: nowrap;
+  background-image: linear-gradient(
+    90deg,
+    var(--danceability-low) 0%,
+    var(--danceability-high) 50%,
+    #ffffff 50%,
+    #ffffff 100%
+  );
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  transition: background-position 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-header h1:hover {
+  background-position: 0% 0;
+}
+
+.chart-filter-legend-area {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 24px 32px;
+  padding-left: 20px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.map-guide {
+  min-width: 0;
+  max-width: 340px;
+}
+
+.map-guide-intro {
+  margin: 0 0 8px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.map-guide-axes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.map-guide-axis-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.map-guide-axis-arrow {
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 700;
+}
+
+.map-guide-axis-name {
+  color: #ffffff;
+  font-weight: 700;
+  min-width: 3.5rem;
+}
+
+.map-guide-axis-scale {
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 500;
+  letter-spacing: 0.04em;
 }
 
 .chart-filter-bar {
   grid-area: filters;
   display: flex;
   align-items: center;
-  gap: 14px;
+  flex-wrap: wrap;
+  gap: 14px 20px;
   min-width: 0;
-  padding: 14px var(--page-pad-x);
+  padding: 12px var(--page-pad-x);
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.chart-filter-genre {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
 }
 
 .chart-filter-label {
@@ -114,10 +219,78 @@
 
 .chart-filter-meta {
   flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 12px;
   color: rgba(255, 255, 255, 0.7);
   font-size: 0.8rem;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.encoding-legend {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto 32px auto;
+  column-gap: 28px;
+  row-gap: 6px;
+  align-items: center;
+}
+
+.encoding-legend-label {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.encoding-legend-colorbar {
+  width: 120px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(to right, rgb(110, 158, 200), rgb(232, 168, 106));
+  box-shadow: 0 0 10px rgba(183, 148, 255, 0.18);
+  align-self: center;
+}
+
+.encoding-legend-colorbar-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 120px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.encoding-legend-tempo-dots {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  height: 32px;
+}
+
+.encoding-legend-tempo-labels {
+  display: flex;
+  gap: 16px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.encoding-legend-tempo-labels span {
+  width: 32px;
+  text-align: center;
+}
+
+.encoding-legend-dot {
+  width: 32px;
+  height: 32px;
+  overflow: visible;
+  flex-shrink: 0;
 }
 
 .github-icon {
@@ -140,137 +313,6 @@ h2,
 h3,
 p {
   margin-top: 0;
-}
-
-.chart-legend {
-  grid-area: legend;
-  flex-shrink: 0;
-  display: grid;
-  grid-template-columns: minmax(220px, 1.4fr) minmax(180px, 1fr) minmax(160px, 0.9fr);
-  gap: 24px 40px;
-  align-items: start;
-  padding: 18px var(--page-pad-x) 22px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  overflow-x: auto;
-}
-
-.chart-legend-intro-block {
-  min-width: 0;
-}
-
-.chart-legend-heading {
-  margin: 0 0 6px;
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.chart-legend-intro {
-  margin: 0 0 12px;
-  color: rgba(255, 255, 255, 0.65);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1.45;
-}
-
-.chart-legend-axes {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.chart-legend-axis-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 8px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.chart-legend-axis-arrow {
-  color: rgba(255, 255, 255, 0.45);
-  font-weight: 700;
-}
-
-.chart-legend-axis-name {
-  color: #ffffff;
-  font-weight: 700;
-  min-width: 4rem;
-}
-
-.chart-legend-axis-scale {
-  color: rgba(255, 255, 255, 0.55);
-  font-weight: 500;
-  letter-spacing: 0.04em;
-}
-
-.chart-legend-danceability,
-.chart-legend-tempo {
-  min-width: 0;
-}
-
-.chart-legend-colorbar {
-  height: 10px;
-  border-radius: 999px;
-  background: linear-gradient(to right, rgb(110, 158, 200), rgb(232, 168, 106));
-  box-shadow: 0 0 12px rgba(183, 148, 255, 0.2);
-}
-
-.chart-legend-colorbar-labels {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 6px;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-}
-
-.chart-legend-scale-color {
-  margin-top: 14px;
-}
-
-.chart-legend-subheading {
-  margin: 0 0 10px;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-}
-
-.chart-legend-scale {
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-start;
-  gap: 28px;
-}
-
-.chart-legend-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-}
-
-.chart-legend-dot {
-  width: 36px;
-  height: 36px;
-  overflow: visible;
-  filter:
-    drop-shadow(0 0 2px rgba(255, 255, 255, 0.45))
-    drop-shadow(0 0 6px rgba(183, 148, 255, 0.28));
-}
-
-.chart-legend-dot circle {
-  transform-box: fill-box;
-  transform-origin: center;
 }
 
 .chart-card {
@@ -485,6 +527,10 @@ p {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .page-header h1 {
+    transition: none;
+  }
+
   .song-dot {
     transition: transform 120ms ease, filter 120ms ease;
   }
@@ -502,20 +548,40 @@ p {
 
 @media (max-width: 920px) {
   .app-shell {
-    grid-template-rows: auto auto minmax(420px, 55vh) auto;
+    grid-template-rows: auto auto minmax(420px, 55vh);
     height: auto;
     min-height: 100vh;
     overflow: auto;
   }
 
-  .chart-filter-bar {
+  .page-header {
     flex-wrap: wrap;
+  }
+
+  .chart-filter-bar {
     align-items: flex-start;
   }
 
-  .chart-filter-meta {
+  .chart-filter-genre {
+    flex-wrap: wrap;
     width: 100%;
-    margin-top: 4px;
+  }
+
+  .chart-filter-meta {
+    margin-left: auto;
+    padding-left: 0;
+  }
+
+  .chart-filter-legend-area {
+    width: 100%;
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    padding-top: 12px;
+  }
+
+  .map-guide {
+    max-width: none;
   }
 
   .chart-card {
@@ -525,14 +591,5 @@ p {
 
   .chart-body {
     min-height: min(50vh, 520px);
-  }
-
-  .chart-legend {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-
-  .chart-legend-scale {
-    justify-content: flex-start;
   }
 }

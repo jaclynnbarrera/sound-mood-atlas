@@ -16,7 +16,7 @@ An interactive mood map for exploring music by **valence** and **energy**. Each 
 - **Genre filter bar** — horizontal chip filters above the chart
 - **Interactive dots** — hover to inspect a song; color encodes danceability (cool → warm), size encodes tempo, glow on focus
 - **Shareable URLs** — genre and selected track sync to the address bar (`?genre=pop&track=…&artist=…`)
-- **How-to-read legend** — axis meaning, tempo scale, and danceability guide below the chart
+- **How-to-read guide** — axis meaning in the header; danceability and tempo encoding in the filter bar
 - **Responsive layout** — full-width chart with filters across the top
 
 ---
@@ -176,7 +176,7 @@ Production is a static Vite build on [Vercel](https://sound-mood-atlas.vercel.ap
 - **Energy** → vertical axis (chill ↔ intense)
 - **Tempo** → dot radius
 - **Danceability** → dot color (cool blue → warm gold)
-- Axis titles and a footer legend explain the map without cluttering the plot area
+- Header guide and filter-bar encodings explain the map without cluttering the plot area
 - The source dataset can list the same track multiple times with different genre tags; use the genre filter to explore subsets
 
 ---

@@ -204,7 +204,12 @@ function App() {
   return (
       <main className="app-shell">
         <header className="page-header">
-          <h1>Sound Mood Atlas</h1>
+          <div className="page-header-brand">
+            <h1>Sound Mood Atlas</h1>
+            <p className="page-header-tagline">
+              Mapping songs by <strong>mood, tempo &amp; danceability</strong>
+            </p>
+          </div>
           <a
             href="https://github.com/jaclynnbarrera/sound-mood-atlas"
             className="github-icon"
@@ -237,7 +242,6 @@ function App() {
           }
         />
 
-        <ChartLegend />
       </main>
   );
 }
@@ -474,104 +478,100 @@ function SongTooltip({ song, centerX, centerY }) {
 function GenreFilterBar({ genres, selectedGenre, onGenreChange, trackCountLabel }) {
   return (
     <div className="chart-filter-bar">
-      <span className="chart-filter-label">Genre</span>
-      <div className="chart-filter-scroll">
-        <div className="chart-filter-options" role="group" aria-label="Filter by genre">
-          <button
-            type="button"
-            className={`chart-filter-chip${selectedGenre === ALL_GENRES ? ' is-active' : ''}`}
-            aria-pressed={selectedGenre === ALL_GENRES}
-            onClick={() => onGenreChange(ALL_GENRES)}
-          >
-            All
-          </button>
-          {genres.map((genre) => (
+      <div className="chart-filter-genre">
+        <span className="chart-filter-label">Genre</span>
+        <div className="chart-filter-scroll">
+          <div className="chart-filter-options" role="group" aria-label="Filter by genre">
             <button
-              key={genre}
               type="button"
-              className={`chart-filter-chip${selectedGenre === genre ? ' is-active' : ''}`}
-              aria-pressed={selectedGenre === genre}
-              onClick={() => onGenreChange(genre)}
+              className={`chart-filter-chip${selectedGenre === ALL_GENRES ? ' is-active' : ''}`}
+              aria-pressed={selectedGenre === ALL_GENRES}
+              onClick={() => onGenreChange(ALL_GENRES)}
             >
-              {formatGenreLabel(genre)}
+              All
             </button>
-          ))}
+            {genres.map((genre) => (
+              <button
+                key={genre}
+                type="button"
+                className={`chart-filter-chip${selectedGenre === genre ? ' is-active' : ''}`}
+                aria-pressed={selectedGenre === genre}
+                onClick={() => onGenreChange(genre)}
+              >
+                {formatGenreLabel(genre)}
+              </button>
+            ))}
+          </div>
         </div>
+        <span className="chart-filter-meta">{trackCountLabel}</span>
       </div>
-      <span className="chart-filter-meta">{trackCountLabel}</span>
+
+      <div className="chart-filter-legend-area">
+        <EncodingLegend />
+        <MapGuide />
+      </div>
     </div>
   );
 }
 
-function ChartLegend() {
+function MapGuide() {
   return (
-    <footer className="chart-legend" aria-label="How to read the mood map">
-      <div className="chart-legend-intro-block">
-        <h3 className="chart-legend-heading">How to read this map</h3>
-        <p className="chart-legend-intro">
-          Each dot is a song. Position shows mood; size shows tempo; color shows danceability.
-        </p>
-
-        <div className="chart-legend-axes">
-          <div className="chart-legend-axis-row">
-            <span className="chart-legend-axis-arrow" aria-hidden="true">←</span>
-            <span className="chart-legend-axis-name">Valence</span>
-            <span className="chart-legend-axis-scale">sad ········· happy</span>
-            <span className="chart-legend-axis-arrow" aria-hidden="true">→</span>
-          </div>
-          <div className="chart-legend-axis-row">
-            <span className="chart-legend-axis-arrow" aria-hidden="true">↑</span>
-            <span className="chart-legend-axis-name">Energy</span>
-            <span className="chart-legend-axis-scale">chill ········· intense</span>
-          </div>
+    <div className="map-guide" aria-label="How to read the mood map">
+      <p className="map-guide-intro">
+        Each dot is a song. Position shows mood; size shows tempo; color shows danceability.
+      </p>
+      <div className="map-guide-axes">
+        <div className="map-guide-axis-row">
+          <span className="map-guide-axis-arrow" aria-hidden="true">←</span>
+          <span className="map-guide-axis-name">Valence</span>
+          <span className="map-guide-axis-scale">sad ········· happy</span>
+          <span className="map-guide-axis-arrow" aria-hidden="true">→</span>
+        </div>
+        <div className="map-guide-axis-row">
+          <span className="map-guide-axis-arrow" aria-hidden="true">↑</span>
+          <span className="map-guide-axis-name">Energy</span>
+          <span className="map-guide-axis-scale">chill ········· intense</span>
         </div>
       </div>
+    </div>
+  );
+}
 
-      <div className="chart-legend-danceability">
-        <p className="chart-legend-subheading">Dot color = danceability</p>
-        <div
-          className="chart-legend-colorbar"
-          role="img"
-          aria-label="Danceability color scale from low cool blue to high warm gold"
-        />
-        <div className="chart-legend-colorbar-labels">
-          <span>Low</span>
-          <span>High</span>
-        </div>
-        <div className="chart-legend-scale chart-legend-scale-color">
-          {[
-            { t: 0, label: 'Low' },
-            { t: 0.5, label: 'Mid' },
-            { t: 1, label: 'High' },
-          ].map(({ t, label }) => (
-            <div key={label} className="chart-legend-item">
-              <svg className="chart-legend-dot" viewBox="0 0 40 40" aria-hidden="true">
-                <circle cx="20" cy="20" r={10} fill={danceabilityColor(t)} />
-              </svg>
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
+function EncodingLegend() {
+  return (
+    <div className="encoding-legend" aria-label="Dot encoding legend">
+      <p className="encoding-legend-label">Dot color = danceability</p>
+      <p className="encoding-legend-label">Dot size = tempo</p>
+
+      <div
+        className="encoding-legend-colorbar"
+        role="img"
+        aria-label="Danceability color scale from low cool blue to high warm gold"
+      />
+
+      <div className="encoding-legend-tempo-dots" aria-hidden="true">
+        {[
+          { r: 4, label: 'Slower' },
+          { r: 9, label: 'Mid' },
+          { r: 14, label: 'Faster' },
+        ].map(({ r, label }) => (
+          <svg key={label} className="encoding-legend-dot" viewBox="0 0 40 40">
+            <circle cx="20" cy="20" r={r} fill="rgba(255, 255, 255, 0.85)" />
+          </svg>
+        ))}
       </div>
 
-      <div className="chart-legend-tempo">
-        <p className="chart-legend-subheading">Dot size = tempo</p>
-        <div className="chart-legend-scale">
-          {[
-            { r: 4, label: 'Slower' },
-            { r: 9, label: 'Mid' },
-            { r: 14, label: 'Faster' },
-          ].map(({ r, label }) => (
-            <div key={label} className="chart-legend-item">
-              <svg className="chart-legend-dot" viewBox="0 0 40 40" aria-hidden="true">
-                <circle cx="20" cy="20" r={r} fill="rgba(255, 255, 255, 0.85)" />
-              </svg>
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
+      <div className="encoding-legend-colorbar-labels">
+        <span>Low</span>
+        <span>High</span>
       </div>
-    </footer>
+
+      <div className="encoding-legend-tempo-labels">
+        <span>Slower</span>
+        <span>Mid</span>
+        <span>Faster</span>
+      </div>
+    </div>
   );
 }
 
