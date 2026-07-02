@@ -3,6 +3,15 @@ import './App.css';
 
 const SONGS_URL = '/songs.json';
 const ALL_GENRES = '';
+const FILTER_GENRES = ['dance', 'hip-hop', 'indie', 'latin', 'pop', 'reggae', 'rock'];
+
+function formatGenreLabel(genre) {
+  if (genre === 'hip-hop') {
+    return 'hip hop';
+  }
+
+  return genre;
+}
 
 const DANCEABILITY_COLOR_LOW = [110, 158, 200];
 const DANCEABILITY_COLOR_HIGH = [232, 168, 106];
@@ -84,7 +93,6 @@ function App() {
   const [songs, setSongs] = useState([]);
   const [selectedSong, setSelectedSong] = useState(null);
   const [selectedGenre, setSelectedGenre] = useState(ALL_GENRES);
-  const [status, setStatus] = useState('Loading songs...');
   const [urlStateReady, setUrlStateReady] = useState(false);
   const hydratedFromUrlRef = useRef(false);
 
@@ -99,17 +107,15 @@ function App() {
         })
         .then((data) => {
           setSongs(data);
-          setStatus(`Loaded ${data.length} songs`);
         })
         .catch((error) => {
           console.error('Error loading songs:', error);
-          setStatus('Could not load songs. Run npm run build:data in backend/ if songs.json is missing.');
         });
   }, []);
 
-  const genres = useMemo(() => {
-    const uniqueGenres = new Set(songs.map((song) => song.genre).filter(Boolean));
-    return Array.from(uniqueGenres).sort();
+  const filterGenres = useMemo(() => {
+    const available = new Set(songs.map((song) => song.genre).filter(Boolean));
+    return FILTER_GENRES.filter((genre) => available.has(genre));
   }, [songs]);
 
   const filteredSongs = useMemo(() => {
@@ -145,7 +151,7 @@ function App() {
     hydratedFromUrlRef.current = true;
 
     const { genre, track, artist, songGenre } = readUrlState();
-    const validGenre = genre && genres.includes(genre) ? genre : ALL_GENRES;
+    const validGenre = genre && filterGenres.includes(genre) ? genre : ALL_GENRES;
 
     setSelectedGenre(validGenre);
 
@@ -155,7 +161,7 @@ function App() {
     }
 
     setUrlStateReady(true);
-  }, [songs, genres]);
+  }, [songs, filterGenres]);
 
   useEffect(() => {
     if (!urlStateReady) {
@@ -172,7 +178,7 @@ function App() {
 
     function handlePopState() {
       const { genre, track, artist, songGenre } = readUrlState();
-      const validGenre = genre && genres.includes(genre) ? genre : ALL_GENRES;
+      const validGenre = genre && filterGenres.includes(genre) ? genre : ALL_GENRES;
 
       setSelectedGenre(validGenre);
 
@@ -186,16 +192,18 @@ function App() {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [songs, genres]);
+  }, [songs, filterGenres]);
 
   const trackCountLabel =
-    selectedGenre && filteredSongs.length !== songs.length
-      ? `${filteredSongs.length} of ${songs.length} tracks`
-      : `${songs.length} tracks`;
+    songs.length === 0
+      ? 'Loading…'
+      : selectedGenre && filteredSongs.length !== songs.length
+        ? `${filteredSongs.length} of ${songs.length} tracks`
+        : `${songs.length} tracks`;
 
   return (
       <main className="app-shell">
-        <header className="page-header page-header-left">
+        <header className="page-header">
           <h1>Sound Mood Atlas</h1>
           <a
             href="https://github.com/jaclynnbarrera/sound-mood-atlas"
@@ -212,62 +220,11 @@ function App() {
         </header>
 
         <GenreFilterBar
-          genres={genres}
+          genres={filterGenres}
           selectedGenre={selectedGenre}
           onGenreChange={setSelectedGenre}
           trackCountLabel={trackCountLabel}
         />
-
-        <div className="left-column">
-          <p className="subtitle">
-            Explore songs by mood. Happier tracks move right, higher-energy tracks move up, and color shows how danceable each track is.
-          </p>
-
-          <aside className="panel">
-            <h2>Song details</h2>
-
-            {selectedSong ? (
-                <div className="song-card">
-                  <h3>{selectedSong.track_name}</h3>
-                  <p>{selectedSong.artist}</p>
-
-                  <dl>
-                    <div>
-                      <dt>Genre</dt>
-                      <dd>{selectedSong.genre || 'Unknown'}</dd>
-                    </div>
-                    <div>
-                      <dt>Valence</dt>
-                      <dd>{selectedSong.valence.toFixed(2)}</dd>
-                    </div>
-                    <div>
-                      <dt>Energy</dt>
-                      <dd>{selectedSong.energy.toFixed(2)}</dd>
-                    </div>
-                    <div>
-                      <dt>Danceability</dt>
-                      <dd>{Number(selectedSong.danceability).toFixed(2)}</dd>
-                    </div>
-                    <div>
-                      <dt>Popularity</dt>
-                      <dd>{selectedSong.popularity}</dd>
-                    </div>
-                  </dl>
-                </div>
-            ) : (
-                <p className="muted">Hover over a point to inspect a song.</p>
-            )}
-
-            <div className="stats">
-              <h2>Dataset</h2>
-              <p>{status}</p>
-              <p>{genres.length} genres found</p>
-            </div>
-          </aside>
-
-          <ChartLegend />
-
-        </div>
 
         <MoodChart
           songs={filteredSongs}
@@ -279,21 +236,61 @@ function App() {
               : null
           }
         />
+
+        <ChartLegend />
       </main>
   );
 }
 
 function MoodChart({ songs, selectedSong, onSelectSong, emptyMessage }) {
-  const width = 900;
-  const height = 760;
-  const margin = { top: 40, right: 40, bottom: 52, left: 36 };
-  const sparseTicks = [0, 0.5, 1];
+  const containerRef = useRef(null);
+  const [dimensions, setDimensions] = useState({ width: 1200, height: 600 });
+  const axisDisplayMax = 2;
+  const xTickFractions = [0, 0.25, 0.5, 0.75, 1];
+  const yTickFractions = [0, 0.5, 1];
+  const dotInset = 18;
+
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) {
+      return undefined;
+    }
+
+    const updateSize = () => {
+      const { width, height } = node.getBoundingClientRect();
+      if (width > 0 && height > 0) {
+        setDimensions({ width: Math.round(width), height: Math.round(height) });
+      }
+    };
+
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  const width = dimensions.width;
+  const height = dimensions.height;
+  const margin = {
+    top: 28,
+    right: 24,
+    bottom: 44,
+    left: 40,
+  };
   const plotLeft = margin.left;
   const plotRight = width - margin.right;
   const plotTop = margin.top;
   const plotBottom = height - margin.bottom;
-  const plotWidth = plotRight - plotLeft;
-  const plotHeight = plotBottom - plotTop;
+  const plotWidth = Math.max(plotRight - plotLeft, 1);
+  const plotHeight = Math.max(plotBottom - plotTop, 1);
+  const innerPlotWidth = Math.max(plotWidth - dotInset * 2, 1);
+  const innerPlotHeight = Math.max(plotHeight - dotInset * 2, 1);
+  const plotCenterX = (plotLeft + plotRight) / 2;
+  const plotCenterY = (plotTop + plotBottom) / 2;
+
+  function formatAxisLabel(fraction) {
+    return (fraction * axisDisplayMax).toFixed(1);
+  }
 
   const tempoValues = useMemo(
     () => songs.map((song) => Number(song.tempo)).filter((tempo) => Number.isFinite(tempo)),
@@ -305,11 +302,11 @@ function MoodChart({ songs, selectedSong, onSelectSong, emptyMessage }) {
   const tempoRange = Math.max(maxTempo - minTempo, 1);
 
   function getX(song) {
-    return plotLeft + song.valence * plotWidth;
+    return plotLeft + dotInset + song.valence * innerPlotWidth;
   }
 
   function getY(song) {
-    return plotBottom - song.energy * plotHeight;
+    return plotBottom - dotInset - song.energy * innerPlotHeight;
   }
 
   function getRadius(song) {
@@ -318,19 +315,24 @@ function MoodChart({ songs, selectedSong, onSelectSong, emptyMessage }) {
     return 4 + Math.min(Math.max(normalized, 0), 1) * 10;
   }
 
+  function handleDotEnter(song) {
+    onSelectSong(song);
+  }
+
+  function handleDotLeave() {
+    onSelectSong(null);
+  }
+
   return (
       <section className="chart-card">
         <div className="chart-body">
           {emptyMessage ? (
             <p className="chart-empty">{emptyMessage}</p>
           ) : null}
-          <div className="chart-frame">
-            <p className="chart-axis-label chart-axis-label-y">Energy</p>
-            <div className="chart-plot-wrap">
+          <div className="chart-plot-wrap" ref={containerRef}>
         <svg
           className="mood-chart"
           viewBox={`0 0 ${width} ${height}`}
-          preserveAspectRatio="xMinYMin meet"
           role="img"
         >
           {/* Y-axis (left vertical line) */}
@@ -339,18 +341,27 @@ function MoodChart({ songs, selectedSong, onSelectSong, emptyMessage }) {
           {/* X-axis (bottom horizontal line) */}
           <line className="axis-line" x1={plotLeft} y1={plotBottom} x2={plotRight} y2={plotBottom} />
 
-          {/* Sparse axis ticks (0, 0.5, 1) */}
-          {sparseTicks.map((value) => {
-            const x = plotLeft + value * plotWidth;
-            const y = plotBottom - value * plotHeight;
-            const tickLabel = value.toFixed(1);
+          {/* Sparse axis ticks (display 0–2 on valence, 0–2 on energy) */}
+          {xTickFractions.map((fraction) => {
+            const x = plotLeft + fraction * plotWidth;
+            const tickLabel = formatAxisLabel(fraction);
 
             return (
-              <g key={`tick-${value}`}>
+              <g key={`x-tick-${fraction}`}>
                 <line className="axis-tick" x1={x} y1={plotBottom} x2={x} y2={plotBottom + 8} />
                 <text className="axis-label" x={x} y={plotBottom + 26} textAnchor="middle">
                   {tickLabel}
                 </text>
+              </g>
+            );
+          })}
+
+          {yTickFractions.map((fraction) => {
+            const y = plotBottom - fraction * plotHeight;
+            const tickLabel = formatAxisLabel(fraction);
+
+            return (
+              <g key={`y-tick-${fraction}`}>
                 <line className="axis-tick" x1={plotLeft - 8} y1={y} x2={plotLeft} y2={y} />
                 <text className="axis-label" x={plotLeft - 20} y={y + 4} textAnchor="end">
                   {tickLabel}
@@ -402,20 +413,61 @@ function MoodChart({ songs, selectedSong, onSelectSong, emptyMessage }) {
                     r={getRadius(song)}
                     fill={danceabilityColor(song.danceability)}
                     className={isSelected ? 'song-dot selected' : 'song-dot'}
-                    onMouseEnter={() => onSelectSong(song)}
-                    onMouseLeave={() => onSelectSong(null)}
-                    onFocus={() => onSelectSong(song)}
-                    onBlur={() => onSelectSong(null)}
+                    onMouseEnter={() => handleDotEnter(song)}
+                    onMouseLeave={handleDotLeave}
+                    onFocus={() => handleDotEnter(song)}
+                    onBlur={handleDotLeave}
                     tabIndex="0"
                 />
             );
           })}
         </svg>
-            </div>
+            <SongTooltip song={selectedSong} centerX={plotCenterX} centerY={plotCenterY} />
           </div>
-          <p className="chart-axis-label chart-axis-label-x">Valence</p>
         </div>
       </section>
+  );
+}
+
+function SongTooltip({ song, centerX, centerY }) {
+  const visible = Boolean(song);
+
+  return (
+    <div
+      className={`song-tooltip${visible ? ' is-visible' : ''}`}
+      style={{ left: `${centerX}px`, top: `${centerY}px` }}
+      role="tooltip"
+      aria-hidden={!visible}
+    >
+      {song ? (
+        <div className="song-tooltip-card" key={`${song.track_name}-${song.artist}-${song.genre}`}>
+          <h3 className="song-tooltip-title">{song.track_name}</h3>
+          <p className="song-tooltip-artist">{song.artist}</p>
+          <dl className="song-tooltip-stats">
+            <div>
+              <dt>Genre</dt>
+              <dd>{song.genre || 'Unknown'}</dd>
+            </div>
+            <div>
+              <dt>Valence</dt>
+              <dd>{song.valence.toFixed(2)}</dd>
+            </div>
+            <div>
+              <dt>Energy</dt>
+              <dd>{song.energy.toFixed(2)}</dd>
+            </div>
+            <div>
+              <dt>Danceability</dt>
+              <dd>{Number(song.danceability).toFixed(2)}</dd>
+            </div>
+            <div>
+              <dt>Popularity</dt>
+              <dd>{song.popularity}</dd>
+            </div>
+          </dl>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -441,7 +493,7 @@ function GenreFilterBar({ genres, selectedGenre, onGenreChange, trackCountLabel 
               aria-pressed={selectedGenre === genre}
               onClick={() => onGenreChange(genre)}
             >
-              {genre}
+              {formatGenreLabel(genre)}
             </button>
           ))}
         </div>
@@ -453,23 +505,25 @@ function GenreFilterBar({ genres, selectedGenre, onGenreChange, trackCountLabel 
 
 function ChartLegend() {
   return (
-    <div className="chart-legend" aria-label="How to read the mood map">
-      <h3 className="chart-legend-heading">How to read this map</h3>
-      <p className="chart-legend-intro">
-        Each dot is a song. Position shows mood; size shows tempo; color shows danceability.
-      </p>
+    <footer className="chart-legend" aria-label="How to read the mood map">
+      <div className="chart-legend-intro-block">
+        <h3 className="chart-legend-heading">How to read this map</h3>
+        <p className="chart-legend-intro">
+          Each dot is a song. Position shows mood; size shows tempo; color shows danceability.
+        </p>
 
-      <div className="chart-legend-axes">
-        <div className="chart-legend-axis-row">
-          <span className="chart-legend-axis-arrow" aria-hidden="true">←</span>
-          <span className="chart-legend-axis-name">Valence</span>
-          <span className="chart-legend-axis-scale">sad ········· happy</span>
-          <span className="chart-legend-axis-arrow" aria-hidden="true">→</span>
-        </div>
-        <div className="chart-legend-axis-row">
-          <span className="chart-legend-axis-arrow" aria-hidden="true">↑</span>
-          <span className="chart-legend-axis-name">Energy</span>
-          <span className="chart-legend-axis-scale">chill ········· intense</span>
+        <div className="chart-legend-axes">
+          <div className="chart-legend-axis-row">
+            <span className="chart-legend-axis-arrow" aria-hidden="true">←</span>
+            <span className="chart-legend-axis-name">Valence</span>
+            <span className="chart-legend-axis-scale">sad ········· happy</span>
+            <span className="chart-legend-axis-arrow" aria-hidden="true">→</span>
+          </div>
+          <div className="chart-legend-axis-row">
+            <span className="chart-legend-axis-arrow" aria-hidden="true">↑</span>
+            <span className="chart-legend-axis-name">Energy</span>
+            <span className="chart-legend-axis-scale">chill ········· intense</span>
+          </div>
         </div>
       </div>
 
@@ -510,21 +564,14 @@ function ChartLegend() {
           ].map(({ r, label }) => (
             <div key={label} className="chart-legend-item">
               <svg className="chart-legend-dot" viewBox="0 0 40 40" aria-hidden="true">
-                <defs>
-                  <radialGradient id={`legend-dot-gradient-${r}`} cx="32%" cy="28%" r="72%">
-                    <stop offset="0%" stopColor="#ffffff" />
-                    <stop offset="45%" stopColor="#f0ebff" />
-                    <stop offset="100%" stopColor="#b794ff" />
-                  </radialGradient>
-                </defs>
-                <circle cx="20" cy="20" r={r} fill={`url(#legend-dot-gradient-${r})`} />
+                <circle cx="20" cy="20" r={r} fill="rgba(255, 255, 255, 0.85)" />
               </svg>
               <span>{label}</span>
             </div>
           ))}
         </div>
       </div>
-    </div>
+    </footer>
   );
 }
 

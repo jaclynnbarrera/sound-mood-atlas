@@ -6,7 +6,7 @@ const inputPath = path.join(__dirname, '../data/dataset.csv');
 const outputPath = path.join(__dirname, '../../frontend/public/songs.json');
 const legacyOutputPath = path.join(__dirname, '../data/songs.json');
 
-const SONG_LIMIT = 250;
+const SONG_LIMIT = 150;
 
 const songs = [];
 
