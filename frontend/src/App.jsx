@@ -70,6 +70,14 @@ function writeUrlState({ genre, selectedSong }) {
   }
 }
 
+function isSameSong(a, b) {
+  if (!a || !b) {
+    return false;
+  }
+
+  return a.track_name === b.track_name && a.artist === b.artist && a.genre === b.genre;
+}
+
 function findSongFromUrl(songs, { track, artist, songGenre }) {
   if (!track || !artist) {
     return null;
@@ -91,7 +99,7 @@ function findSongFromUrl(songs, { track, artist, songGenre }) {
 
 function App() {
   const [songs, setSongs] = useState([]);
-  const [selectedSong, setSelectedSong] = useState(null);
+  const [pinnedSong, setPinnedSong] = useState(null);
   const [selectedGenre, setSelectedGenre] = useState(ALL_GENRES);
   const [urlStateReady, setUrlStateReady] = useState(false);
   const hydratedFromUrlRef = useRef(false);
@@ -127,21 +135,16 @@ function App() {
   }, [songs, selectedGenre]);
 
   useEffect(() => {
-    if (!selectedSong) {
+    if (!pinnedSong) {
       return;
     }
 
-    const stillVisible = filteredSongs.some(
-      (song) =>
-        song.track_name === selectedSong.track_name &&
-        song.artist === selectedSong.artist &&
-        song.genre === selectedSong.genre
-    );
+    const stillVisible = filteredSongs.some((song) => isSameSong(song, pinnedSong));
 
     if (!stillVisible) {
-      setSelectedSong(null);
+      setPinnedSong(null);
     }
-  }, [filteredSongs, selectedSong]);
+  }, [filteredSongs, pinnedSong]);
 
   useEffect(() => {
     if (!songs.length || hydratedFromUrlRef.current) {
@@ -157,7 +160,7 @@ function App() {
 
     const songFromUrl = findSongFromUrl(songs, { track, artist, songGenre });
     if (songFromUrl && (!validGenre || songFromUrl.genre === validGenre)) {
-      setSelectedSong(songFromUrl);
+      setPinnedSong(songFromUrl);
     }
 
     setUrlStateReady(true);
@@ -168,8 +171,8 @@ function App() {
       return;
     }
 
-    writeUrlState({ genre: selectedGenre, selectedSong });
-  }, [selectedGenre, selectedSong, urlStateReady]);
+    writeUrlState({ genre: selectedGenre, selectedSong: pinnedSong });
+  }, [selectedGenre, pinnedSong, urlStateReady]);
 
   useEffect(() => {
     if (!songs.length) {
@@ -184,9 +187,9 @@ function App() {
 
       const songFromUrl = findSongFromUrl(songs, { track, artist, songGenre });
       if (songFromUrl && (!validGenre || songFromUrl.genre === validGenre)) {
-        setSelectedSong(songFromUrl);
+        setPinnedSong(songFromUrl);
       } else {
-        setSelectedSong(null);
+        setPinnedSong(null);
       }
     }
 
@@ -233,8 +236,8 @@ function App() {
 
         <MoodChart
           songs={filteredSongs}
-          selectedSong={selectedSong}
-          onSelectSong={setSelectedSong}
+          pinnedSong={pinnedSong}
+          onPinSong={setPinnedSong}
           emptyMessage={
             selectedGenre && filteredSongs.length === 0
               ? `No tracks found for “${selectedGenre}”.`
@@ -246,12 +249,11 @@ function App() {
   );
 }
 
-function MoodChart({ songs, selectedSong, onSelectSong, emptyMessage }) {
+function MoodChart({ songs, pinnedSong, onPinSong, emptyMessage }) {
   const containerRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 1200, height: 600 });
-  const axisDisplayMax = 2;
-  const xTickFractions = [0, 0.25, 0.5, 0.75, 1];
-  const yTickFractions = [0, 0.5, 1];
+  const [hoveredSong, setHoveredSong] = useState(null);
+  const displaySong = hoveredSong ?? pinnedSong;
   const dotInset = 18;
 
   useEffect(() => {
@@ -273,13 +275,17 @@ function MoodChart({ songs, selectedSong, onSelectSong, emptyMessage }) {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    setHoveredSong(null);
+  }, [songs]);
+
   const width = dimensions.width;
   const height = dimensions.height;
   const margin = {
-    top: 28,
-    right: 24,
-    bottom: 44,
-    left: 40,
+    top: 32,
+    right: 44,
+    bottom: 40,
+    left: 48,
   };
   const plotLeft = margin.left;
   const plotRight = width - margin.right;
@@ -289,12 +295,10 @@ function MoodChart({ songs, selectedSong, onSelectSong, emptyMessage }) {
   const plotHeight = Math.max(plotBottom - plotTop, 1);
   const innerPlotWidth = Math.max(plotWidth - dotInset * 2, 1);
   const innerPlotHeight = Math.max(plotHeight - dotInset * 2, 1);
-  const plotCenterX = (plotLeft + plotRight) / 2;
-  const plotCenterY = (plotTop + plotBottom) / 2;
-
-  function formatAxisLabel(fraction) {
-    return (fraction * axisDisplayMax).toFixed(1);
-  }
+  // Neutral (0.5, 0.5) point in plot coordinates — where the perceptual map's
+  // crosshair axes cross, matching how songs themselves are positioned.
+  const neutralX = plotLeft + dotInset + 0.5 * innerPlotWidth;
+  const neutralY = plotBottom - dotInset - 0.5 * innerPlotHeight;
 
   const tempoValues = useMemo(
     () => songs.map((song) => Number(song.tempo)).filter((tempo) => Number.isFinite(tempo)),
@@ -319,13 +323,54 @@ function MoodChart({ songs, selectedSong, onSelectSong, emptyMessage }) {
     return 4 + Math.min(Math.max(normalized, 0), 1) * 10;
   }
 
+  // Stable per-song ids in a fixed render order — dots never get reordered or
+  // remounted on hover/pin, which is what made hovering feel laggy before.
+  // The active dot is instead drawn on top via a single overlay circle below.
+  const idsBySong = useMemo(
+    () => songs.map((song, index) => `${song.track_name}-${song.artist}-${song.genre}-${index}`),
+    [songs]
+  );
+
   function handleDotEnter(song) {
-    onSelectSong(song);
+    setHoveredSong(song);
   }
 
   function handleDotLeave() {
-    onSelectSong(null);
+    setHoveredSong(null);
   }
+
+  function handleDotClick(event, song) {
+    event.stopPropagation();
+    onPinSong(isSameSong(pinnedSong, song) ? null : song);
+  }
+
+  function handleDotKeyDown(event, song) {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+
+    event.preventDefault();
+    onPinSong(isSameSong(pinnedSong, song) ? null : song);
+  }
+
+  function handleBackgroundClick() {
+    onPinSong(null);
+  }
+
+  // Anchor the card beside the pinned dot instead of the plot center: flip to
+  // whichever side has more room, and keep it clear of the top/bottom edges.
+  const cardHalfHeightEstimate = 115;
+  const tooltipAnchor = pinnedSong
+    ? {
+        x: getX(pinnedSong),
+        y: Math.min(
+          Math.max(getY(pinnedSong), plotTop + cardHalfHeightEstimate),
+          plotBottom - cardHalfHeightEstimate
+        ),
+        gap: getRadius(pinnedSong) + 16,
+        align: getX(pinnedSong) <= plotLeft + plotWidth / 2 ? 'right' : 'left',
+      }
+    : null;
 
   return (
       <section className="chart-card">
@@ -338,135 +383,156 @@ function MoodChart({ songs, selectedSong, onSelectSong, emptyMessage }) {
           className="mood-chart"
           viewBox={`0 0 ${width} ${height}`}
           role="img"
+          onClick={handleBackgroundClick}
         >
-          {/* Y-axis (left vertical line) */}
-          <line className="axis-line" x1={plotLeft} y1={plotTop} x2={plotLeft} y2={plotBottom} />
+          {/* Perceptual map crosshair — axes cross at the neutral midpoint
+              rather than the plot corner, with directional labels at each end
+              instead of numeric ticks. */}
+          <line
+            className="quadrant-line"
+            x1={plotLeft}
+            y1={neutralY}
+            x2={plotRight}
+            y2={neutralY}
+          />
+          <line
+            className="quadrant-line"
+            x1={neutralX}
+            y1={plotTop}
+            x2={neutralX}
+            y2={plotBottom}
+          />
 
-          {/* X-axis (bottom horizontal line) */}
-          <line className="axis-line" x1={plotLeft} y1={plotBottom} x2={plotRight} y2={plotBottom} />
+          <text className="axis-end-label" x={plotLeft} y={neutralY - 12} textAnchor="start">
+            ← Sad
+          </text>
+          <text className="axis-end-label" x={plotRight} y={neutralY - 12} textAnchor="end">
+            Happy →
+          </text>
+          <text className="axis-end-label" x={neutralX} y={plotTop - 14} textAnchor="middle">
+            ↑ Intense
+          </text>
+          <text className="axis-end-label" x={neutralX} y={plotBottom + 24} textAnchor="middle">
+            ↓ Chill
+          </text>
 
-          {/* Sparse axis ticks (display 0–2 on valence, 0–2 on energy) */}
-          {xTickFractions.map((fraction) => {
-            const x = plotLeft + fraction * plotWidth;
-            const tickLabel = formatAxisLabel(fraction);
-
-            return (
-              <g key={`x-tick-${fraction}`}>
-                <line className="axis-tick" x1={x} y1={plotBottom} x2={x} y2={plotBottom + 8} />
-                <text className="axis-label" x={x} y={plotBottom + 26} textAnchor="middle">
-                  {tickLabel}
-                </text>
-              </g>
-            );
-          })}
-
-          {yTickFractions.map((fraction) => {
-            const y = plotBottom - fraction * plotHeight;
-            const tickLabel = formatAxisLabel(fraction);
-
-            return (
-              <g key={`y-tick-${fraction}`}>
-                <line className="axis-tick" x1={plotLeft - 8} y1={y} x2={plotLeft} y2={y} />
-                <text className="axis-label" x={plotLeft - 20} y={y + 4} textAnchor="end">
-                  {tickLabel}
-                </text>
-              </g>
-            );
-          })}
-
-          {/* Optional light grid lines */}
-          {[...Array(10)].map((_, i) => {
-            const x = plotLeft + ((i + 1) / 10) * plotWidth;
-            const y = plotBottom - ((i + 1) / 10) * plotHeight;
-            return (
-              <g key={`grid-${i}`}>
-                <line x1={x} y1={plotTop} x2={x} y2={plotBottom} className="grid-line" />
-                <line x1={plotLeft} y1={y} x2={plotRight} y2={y} className="grid-line" />
-              </g>
-            );
-          })}
-
-          {[...songs]
-            .sort((a, b) => {
-              const aSelected =
-                selectedSong?.track_name === a.track_name &&
-                selectedSong?.artist === a.artist &&
-                selectedSong?.genre === a.genre;
-              const bSelected =
-                selectedSong?.track_name === b.track_name &&
-                selectedSong?.artist === b.artist &&
-                selectedSong?.genre === b.genre;
-
-              if (aSelected === bSelected) {
-                return 0;
-              }
-
-              return aSelected ? 1 : -1;
-            })
-            .map((song, index) => {
-            const isSelected =
-              selectedSong?.track_name === song.track_name &&
-              selectedSong?.artist === song.artist &&
-              selectedSong?.genre === song.genre;
+          {songs.map((song, index) => {
+            const isSelected = isSameSong(displaySong, song);
+            const isPinned = isSameSong(pinnedSong, song);
 
             return (
                 <circle
-                    key={`${song.track_name}-${song.artist}-${song.genre}-${index}`}
+                    key={idsBySong[index]}
                     cx={getX(song)}
                     cy={getY(song)}
                     r={getRadius(song)}
                     fill={danceabilityColor(song.danceability)}
-                    className={isSelected ? 'song-dot selected' : 'song-dot'}
+                    className={isSelected ? 'song-dot is-active' : 'song-dot'}
                     onMouseEnter={() => handleDotEnter(song)}
                     onMouseLeave={handleDotLeave}
                     onFocus={() => handleDotEnter(song)}
                     onBlur={handleDotLeave}
+                    onClick={(event) => handleDotClick(event, song)}
+                    onKeyDown={(event) => handleDotKeyDown(event, song)}
+                    role="button"
+                    aria-pressed={isPinned}
+                    aria-label={`${song.track_name} by ${song.artist}${isPinned ? ', pinned' : ''}`}
                     tabIndex="0"
                 />
             );
           })}
+
+          {/* Single overlay for the active dot's glow — avoids reordering/animating
+              every dot's own filter, which is what caused the hover lag. */}
+          {displaySong ? (
+            <circle
+                className="song-dot-highlight"
+                cx={getX(displaySong)}
+                cy={getY(displaySong)}
+                r={getRadius(displaySong)}
+                fill={danceabilityColor(displaySong.danceability)}
+                pointerEvents="none"
+            />
+          ) : null}
         </svg>
-            <SongTooltip song={selectedSong} centerX={plotCenterX} centerY={plotCenterY} />
+            <div className={`chart-dim-overlay${pinnedSong ? ' is-active' : ''}`} aria-hidden="true" />
+            <SongTooltip song={pinnedSong} anchor={tooltipAnchor} onClose={() => onPinSong(null)} />
           </div>
         </div>
       </section>
   );
 }
 
-function SongTooltip({ song, centerX, centerY }) {
+function SongTooltip({ song, anchor, onClose }) {
   const visible = Boolean(song);
+  // Keep rendering the last song's content (and position) through the exit
+  // transition — without this, the card would vanish/jump instead of
+  // animating out in place.
+  const [renderedSong, setRenderedSong] = useState(song);
+  const [renderedAnchor, setRenderedAnchor] = useState(anchor);
+
+  useEffect(() => {
+    if (song && anchor) {
+      setRenderedSong(song);
+      setRenderedAnchor(anchor);
+    }
+  }, [song, anchor]);
+
+  function handleTransitionEnd(event) {
+    if (event.target === event.currentTarget && !visible) {
+      setRenderedSong(null);
+    }
+  }
+
+  const align = renderedAnchor?.align ?? 'right';
+  const gap = renderedAnchor?.gap ?? 0;
+  const anchorX = renderedAnchor?.x ?? 0;
+  const anchorY = renderedAnchor?.y ?? 0;
+  const left = align === 'left' ? anchorX - gap : anchorX + gap;
+  const tooltipTx = align === 'left' ? '-100%' : '0%';
 
   return (
     <div
       className={`song-tooltip${visible ? ' is-visible' : ''}`}
-      style={{ left: `${centerX}px`, top: `${centerY}px` }}
+      style={{ left: `${left}px`, top: `${anchorY}px`, '--tooltip-tx': tooltipTx }}
       role="tooltip"
       aria-hidden={!visible}
+      onTransitionEnd={handleTransitionEnd}
     >
-      {song ? (
-        <div className="song-tooltip-card" key={`${song.track_name}-${song.artist}-${song.genre}`}>
-          <h3 className="song-tooltip-title">{song.track_name}</h3>
-          <p className="song-tooltip-artist">{song.artist}</p>
+      {renderedSong ? (
+        <div className="song-tooltip-card" key={`${renderedSong.track_name}-${renderedSong.artist}-${renderedSong.genre}`}>
+          <button
+            type="button"
+            className="song-tooltip-close"
+            onClick={onClose}
+            aria-label="Close song details"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+              <path d="M1.5 1.5l9 9M10.5 1.5l-9 9" />
+            </svg>
+          </button>
+          <h3 className="song-tooltip-title">{renderedSong.track_name}</h3>
+          <p className="song-tooltip-artist">{renderedSong.artist}</p>
           <dl className="song-tooltip-stats">
             <div>
               <dt>Genre</dt>
-              <dd>{song.genre || 'Unknown'}</dd>
+              <dd>{renderedSong.genre || 'Unknown'}</dd>
             </div>
             <div>
               <dt>Valence</dt>
-              <dd>{song.valence.toFixed(2)}</dd>
+              <dd>{renderedSong.valence.toFixed(2)}</dd>
             </div>
             <div>
               <dt>Energy</dt>
-              <dd>{song.energy.toFixed(2)}</dd>
+              <dd>{renderedSong.energy.toFixed(2)}</dd>
             </div>
             <div>
               <dt>Danceability</dt>
-              <dd>{Number(song.danceability).toFixed(2)}</dd>
+              <dd>{Number(renderedSong.danceability).toFixed(2)}</dd>
             </div>
             <div>
               <dt>Popularity</dt>
-              <dd>{song.popularity}</dd>
+              <dd>{renderedSong.popularity}</dd>
             </div>
           </dl>
         </div>

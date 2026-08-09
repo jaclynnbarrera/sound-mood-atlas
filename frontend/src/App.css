@@ -356,26 +356,34 @@ p {
   min-height: 0;
   width: 100%;
   height: 100%;
+  padding: 4px var(--page-pad-x) 24px;
 }
 
 .song-tooltip {
+  --tooltip-tx: 0%;
   position: absolute;
   z-index: 20;
   pointer-events: none;
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0.96);
+  transform: translate(var(--tooltip-tx), -44%) scale(0.62);
+  box-shadow: 0 0 0 0 rgba(183, 148, 255, 0);
   transition:
-    opacity 180ms ease,
-    transform 220ms cubic-bezier(0.34, 1.2, 0.64, 1);
+    opacity 1100ms cubic-bezier(0.65, 0, 0.35, 1),
+    transform 1100ms cubic-bezier(0.65, 0, 0.35, 1),
+    box-shadow 1300ms cubic-bezier(0.65, 0, 0.35, 1),
+    left 1100ms cubic-bezier(0.65, 0, 0.35, 1),
+    top 1100ms cubic-bezier(0.65, 0, 0.35, 1);
   will-change: opacity, transform;
 }
 
 .song-tooltip.is-visible {
   opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+  transform: translate(var(--tooltip-tx), -50%) scale(1);
+  box-shadow: 0 0 80px 16px rgba(183, 148, 255, 0.32);
 }
 
 .song-tooltip-card {
+  position: relative;
   min-width: 220px;
   max-width: 280px;
   padding: 14px 16px;
@@ -385,10 +393,39 @@ p {
   box-shadow:
     0 12px 32px rgba(0, 0, 0, 0.45),
     0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  pointer-events: auto;
+}
+
+.song-tooltip-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.song-tooltip-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.song-tooltip-close:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 1px;
 }
 
 .song-tooltip-title {
-  margin: 0 0 4px;
+  margin: 0 24px 4px 0;
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.2;
@@ -437,11 +474,13 @@ p {
 @media (prefers-reduced-motion: reduce) {
   .song-tooltip {
     transition: opacity 120ms ease;
-    transform: translate(-50%, -50%);
+    transform: translate(var(--tooltip-tx), -50%);
+    box-shadow: none;
   }
 
   .song-tooltip.is-visible {
-    transform: translate(-50%, -50%);
+    transform: translate(var(--tooltip-tx), -50%);
+    box-shadow: none;
   }
 }
 
@@ -452,19 +491,35 @@ p {
   overflow: visible;
 }
 
-.mood-chart .axis-line {
-  stroke: #ffffff;
-  stroke-width: 2;
+/* Dims/blurs the chart behind an open card. Only opacity animates here — the
+   blur radius itself stays constant — since animating a filter across an SVG
+   full of individually-filtered dots is what caused the pop-in to feel janky. */
+.chart-dim-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0;
+  background: rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(6px) saturate(0.7);
+  -webkit-backdrop-filter: blur(6px) saturate(0.7);
+  transition: opacity 1100ms cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-.mood-chart .axis-tick {
-  stroke: rgba(255, 255, 255, 0.6);
-  stroke-width: 1;
+.chart-dim-overlay.is-active {
+  opacity: 1;
 }
 
-.mood-chart .grid-line {
-  stroke: rgba(255, 255, 255, 0.08);
+@media (prefers-reduced-motion: reduce) {
+  .chart-dim-overlay {
+    transition: opacity 150ms ease;
+  }
+}
+
+.mood-chart .quadrant-line {
+  stroke: rgba(255, 255, 255, 0.3);
   stroke-width: 1;
+  stroke-dasharray: 3 5;
 }
 
 .mood-chart text {
@@ -474,10 +529,12 @@ p {
   font-weight: 700;
 }
 
-.mood-chart .axis-label {
-  fill: rgba(255, 255, 255, 0.55);
+.mood-chart .axis-end-label {
+  fill: rgba(255, 255, 255, 0.65);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .song-dot {
@@ -487,18 +544,15 @@ p {
   cursor: pointer;
   transform-box: fill-box;
   transform-origin: center;
-  filter:
-    drop-shadow(0 0 2px rgba(255, 255, 255, 0.45))
-    drop-shadow(0 0 6px rgba(183, 148, 255, 0.28));
-  transition:
-    transform 220ms cubic-bezier(0.34, 1.4, 0.64, 1),
-    filter 220ms ease;
+  /* Kept to a single, small drop-shadow: with ~150 dots on screen at once,
+     multi-layer filters here are the main cause of paint jank. */
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.35));
+  transition: transform 160ms ease, opacity 160ms ease;
 }
 
 .song-dot:hover,
-.song-dot.selected {
-  transform: scale(1.5);
-  animation: song-dot-glow 1.4s ease-in-out infinite;
+.song-dot.is-active {
+  transform: scale(1.15);
 }
 
 .song-dot:focus {
@@ -506,7 +560,18 @@ p {
 }
 
 .song-dot:focus-visible {
-  transform: scale(1.35);
+  transform: scale(1.15);
+  outline: 2px solid #ffffff;
+  outline-offset: 1px;
+}
+
+/* Single overlay circle drawn on top of the active dot. Only one of these
+   ever exists at a time, so the expensive animated glow stays cheap no
+   matter how many songs are plotted. */
+.song-dot-highlight {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(1.5);
   animation: song-dot-glow 1.4s ease-in-out infinite;
 }
 
@@ -532,12 +597,16 @@ p {
   }
 
   .song-dot {
-    transition: transform 120ms ease, filter 120ms ease;
+    transition: transform 120ms ease, opacity 120ms ease;
   }
 
   .song-dot:hover,
-  .song-dot.selected,
+  .song-dot.is-active,
   .song-dot:focus-visible {
+    transform: scale(1.1);
+  }
+
+  .song-dot-highlight {
     animation: none;
     transform: scale(1.2);
     filter:
